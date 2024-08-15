@@ -17,6 +17,12 @@ With **lazy.nvim**:
     "3rd/image.nvim",
   },
   opts = { -- you can just pass {}, defaults below
+    renderer_options = {
+      mermaid = {
+        background = nil, -- nil | "transparent" | "white" | "#hex"
+        theme = nil, -- nil | "default" | "dark" | "forest" | "neutral"
+      },
+    },
     integrations = {
       require("diagram.integrations.markdown"),
     },

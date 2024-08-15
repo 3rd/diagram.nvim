@@ -3,6 +3,12 @@ local integrations = require("diagram/integrations")
 
 ---@class State
 local state = {
+  renderer_options = {
+    mermaid = {
+      background = nil,
+      theme = nil,
+    },
+  },
   integrations = {
     integrations.markdown,
   },
@@ -34,7 +40,9 @@ local render_buffer = function(bufnr, winnr, integration)
     end
     assert(renderer, "diagram: cannot find renderer with id `" .. diagram.renderer_id .. "`")
 
-    local rendered_path = renderer.render(diagram.source)
+    local renderer_options = state.renderer_options[renderer.id] or {}
+    local rendered_path = renderer.render(diagram.source, renderer_options)
+
     local image = image_nvim.from_file(rendered_path, {
       buffer = bufnr,
       window = winnr,
@@ -54,6 +62,7 @@ local setup = function(opts)
   if not ok then error("diagram: missing dependency `3rd/image.nvim`") end
 
   state.integrations = opts.integrations or state.integrations
+  state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
 
   for _, integration in ipairs(state.integrations) do
     for _, ft in ipairs(integration.filetypes) do

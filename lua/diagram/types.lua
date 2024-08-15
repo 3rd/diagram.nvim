@@ -4,6 +4,7 @@
 
 ---@class PluginOptions
 ---@field integrations Integration[]
+---@field renderer_options table<string, any>
 
 ---@class Renderer<RenderOptions>
 ---@field id string
