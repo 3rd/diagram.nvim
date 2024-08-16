@@ -1,6 +1,7 @@
 ---@class MermaidOptions
 ---@field background? string
 ---@field theme? string
+---@field scale? number
 
 ---@type table<string, string>
 local cache = {} -- session cache
@@ -43,6 +44,10 @@ M.render = function(source, options)
   if options.theme then
     table.insert(command_parts, "-t")
     table.insert(command_parts, options.theme)
+  end
+  if options.scale then
+    table.insert(command_parts, "-s")
+    table.insert(command_parts, options.scale)
   end
 
   local command = table.concat(command_parts, " ")
