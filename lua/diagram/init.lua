@@ -11,6 +11,7 @@ local state = {
   },
   integrations = {
     integrations.markdown,
+    integrations.neorg,
   },
   diagrams = {},
 }

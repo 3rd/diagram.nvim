@@ -6,8 +6,8 @@ local query = nil
 
 ---@class Integration
 local M = {
-  id = "markdown",
-  filetypes = { "markdown" },
+  id = "neorg",
+  filetypes = { "norg" },
   renderers = {
     renderers.mermaid,
   },
@@ -15,39 +15,52 @@ local M = {
 
 M.query_buffer_diagrams = function(bufnr)
   if not query then
-    query = ts_query.parse("markdown", "(fenced_code_block (info_string) @info (code_fence_content) @code)")
+    query = ts_query.parse(
+      "norg",
+      [[
+      (ranged_verbatim_tag
+        name: (tag_name) @tag_name
+        (tag_parameters)? @tag_params
+        content: (ranged_verbatim_tag_content) @content
+      )
+      ]]
+    )
   end
 
   local buf = bufnr or vim.api.nvim_get_current_buf()
-  local parser = vim.treesitter.get_parser(buf, "markdown")
+  local parser = vim.treesitter.get_parser(buf, "norg")
   parser:parse(true)
 
   local root = parser:parse()[1]:root()
-  local matches = query:iter_captures(root, bufnr)
+  local matches = query:iter_captures(root, buf)
 
   ---@type Diagram[]
   local diagrams = {}
   local current_language = nil
   ---@type { start_row: number, start_col: number, end_row: number, end_col: number }
   local current_range = nil
+
   for id, node in matches do
     local key = query.captures[id]
-    local value = vim.treesitter.get_node_text(node, bufnr)
+    local value = vim.treesitter.get_node_text(node, buf)
 
-    if key == "info" then
-      ---@diagnostic disable-next-line: unused-local
-      local start_row, _start_col, end_row, end_col = node:range()
+    if key == "tag_name" then
+      local start_row, start_col, _, _ = node:range()
       current_range = {
         start_row = start_row,
-        start_col = 0,
-        end_row = end_row,
-        end_col = end_col,
+        start_col = start_col,
+        end_row = 0,
+        end_col = 0,
       }
+    elseif key == "tag_params" then
       current_language = value
-    else
+    elseif key == "content" then
       if current_language == "mermaid" then
+        local _, _, end_row, end_col = node:range()
+        current_range.end_row = end_row
+        current_range.end_col = end_col
         table.insert(diagrams, {
-          bufnr = bufnr,
+          bufnr = buf,
           renderer_id = "mermaid",
           source = value,
           range = current_range,
