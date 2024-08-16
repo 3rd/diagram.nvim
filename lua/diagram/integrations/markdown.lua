@@ -30,15 +30,20 @@ M.query_buffer_diagrams = function(bufnr)
 
     if key == "info" then
       ---@diagnostic disable-next-line: unused-local
-      local start_row, _start_col, end_row, end_col = node:range()
+      local start_row, _start_col, _end_row, _end_col = node:range()
       current_range = {
         start_row = start_row,
         start_col = 0,
-        end_row = end_row,
-        end_col = end_col,
+        end_row = 0,
+        end_col = 0,
       }
       current_language = value
     else
+      ---@diagnostic disable-next-line: unused-local
+      local _start_row, _start_col, end_row, end_col = node:range()
+      current_range.end_row = end_row
+      current_range.end_col = end_col
+
       if current_language == "mermaid" then
         table.insert(diagrams, {
           bufnr = bufnr,

@@ -1,10 +1,13 @@
 ---@class State
 ---@field integrations Integration[]
 ---@field diagrams Diagram[]
+---@field renderer_options table<string, any>
+---@field conceal_enable boolean
 
 ---@class PluginOptions
 ---@field integrations Integration[]
 ---@field renderer_options table<string, any>
+---@field conceal_enable boolean
 
 ---@class Renderer<RenderOptions>
 ---@field id string
@@ -26,3 +29,4 @@
 ---@field renderer_id string
 ---@field source string
 ---@field image Image|nil
+---@field conceal_namespace number|nil
