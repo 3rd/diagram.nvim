@@ -37,6 +37,7 @@ With **lazy.nvim**:
       mermaid = {
         background = nil, -- nil | "transparent" | "white" | "#hex"
         theme = nil, -- nil | "default" | "dark" | "forest" | "neutral"
+        scale = 1, -- nil | 1 (default) | 2  | 3 | ...
       },
     }
   },
