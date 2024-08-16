@@ -17,6 +17,7 @@ Integrations read buffers, extract diagram code, and dispatch work to the render
 | Integration | Supported renderers |
 | ----------- | ------------------- |
 | `markdown`  | `mermaid`           |
+| `neorg`     | `mermaid`           |
 
 | Renderer  | Requirements                                      |
 | --------- | ------------------------------------------------- |
