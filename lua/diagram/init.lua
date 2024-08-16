@@ -42,6 +42,7 @@ local render_buffer = function(bufnr, winnr, integration)
 
     local renderer_options = state.renderer_options[renderer.id] or {}
     local rendered_path = renderer.render(diagram.source, renderer_options)
+    if not rendered_path then return end
 
     local image = image_nvim.from_file(rendered_path, {
       buffer = bufnr,

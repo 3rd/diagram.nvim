@@ -17,7 +17,7 @@ vim.fn.mkdir(tmpdir, "p")
 
 ---@param source string
 ---@param options MermaidOptions
----@return string
+---@return string|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
   if cache[hash] then return cache[hash] end
@@ -52,6 +52,10 @@ M.render = function(source, options)
 
   local command = table.concat(command_parts, " ")
   vim.fn.system(command)
+  if vim.v.shell_error ~= 0 then
+    vim.notify("diagram/mermaid: mmdc failed to render diagram", vim.log.levels.ERROR)
+    return nil
+  end
 
   cache[hash] = path
   return path
