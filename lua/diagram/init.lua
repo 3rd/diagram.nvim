@@ -64,6 +64,10 @@ local setup = function(opts)
   state.integrations = opts.integrations or state.integrations
   state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
 
+  local current_bufnr = vim.api.nvim_get_current_buf()
+  local current_winnr = vim.api.nvim_get_current_win()
+  local current_ft = vim.bo[current_bufnr].filetype
+
   for _, integration in ipairs(state.integrations) do
     for _, ft in ipairs(integration.filetypes) do
       vim.api.nvim_create_autocmd("FileType", {
@@ -90,6 +94,9 @@ local setup = function(opts)
               clear_buffer(bufnr, winnr)
             end,
           })
+
+          -- first render
+          if current_ft == ft then render_buffer(current_bufnr, current_winnr, integration) end
         end,
       })
     end
