@@ -1,7 +1,8 @@
 local renderers = require("diagram/renderers")
 local ts_query = require("vim.treesitter.query")
 
-local query = ts_query.parse("markdown", "(fenced_code_block (info_string) @info (code_fence_content) @code)")
+---@type vim.treesitter.Query
+local query = nil
 
 ---@class Integration
 local M = {

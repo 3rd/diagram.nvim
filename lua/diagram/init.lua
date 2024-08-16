@@ -15,8 +15,8 @@ local state = {
   diagrams = {},
 }
 
-local clear_buffer = function(bufnr, winnr)
-  local images = image_nvim.get_images({ buffer = bufnr, window = winnr })
+local clear_buffer = function(bufnr)
+  local images = image_nvim.get_images({ buffer = bufnr })
   for _, image in ipairs(images) do
     image:clear()
   end
@@ -26,7 +26,7 @@ end
 ---@param winnr number
 ---@param integration Integration
 local render_buffer = function(bufnr, winnr, integration)
-  clear_buffer(bufnr, winnr)
+  clear_buffer(bufnr)
   local diagrams = integration.query_buffer_diagrams(bufnr)
 
   for _, diagram in ipairs(diagrams) do
@@ -52,6 +52,7 @@ local render_buffer = function(bufnr, winnr, integration)
       y = diagram.range.start_row,
     })
     diagram.image = image
+    table.insert(state.diagrams, diagram)
     image:render()
   end
 end
@@ -68,37 +69,38 @@ local setup = function(opts)
   local current_winnr = vim.api.nvim_get_current_win()
   local current_ft = vim.bo[current_bufnr].filetype
 
+  local setup_buffer = function(bufnr, integration)
+    -- render
+    vim.api.nvim_create_autocmd({ "InsertLeave", "BufWinEnter", "TextChanged" }, {
+      buffer = bufnr,
+      callback = function(buf_ev)
+        local winnr = buf_ev.event == "BufWinEnter" and buf_ev.winnr or vim.api.nvim_get_current_win()
+        render_buffer(bufnr, winnr, integration)
+      end,
+    })
+
+    -- clear
+    vim.api.nvim_create_autocmd("InsertEnter", {
+      buffer = bufnr,
+      callback = function()
+        clear_buffer(bufnr)
+      end,
+    })
+  end
+
+  -- setup integrations
   for _, integration in ipairs(state.integrations) do
-    for _, ft in ipairs(integration.filetypes) do
-      vim.api.nvim_create_autocmd("FileType", {
-        pattern = ft,
-        callback = function(ft_event)
-          local ft_bufnr = ft_event.buf
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = integration.filetypes,
+      callback = function(ft_event)
+        setup_buffer(ft_event.buf, integration)
+      end,
+    })
 
-          -- render
-          vim.api.nvim_create_autocmd({ "InsertLeave", "BufWinEnter", "TextChanged" }, {
-            buffer = ft_bufnr,
-            callback = function(buf_ev)
-              local bufnr = buf_ev.buf
-              local winnr = buf_ev.event == "BufWinEnter" and buf_ev.winnr or vim.api.nvim_get_current_win()
-              render_buffer(bufnr, winnr, integration)
-            end,
-          })
-
-          -- clear
-          vim.api.nvim_create_autocmd("InsertEnter", {
-            buffer = ft_bufnr,
-            callback = function(buf_ev)
-              local bufnr = buf_ev.buf
-              local winnr = vim.api.nvim_get_current_win()
-              clear_buffer(bufnr, winnr)
-            end,
-          })
-
-          -- first render
-          if current_ft == ft then render_buffer(current_bufnr, current_winnr, integration) end
-        end,
-      })
+    -- first render
+    if vim.tbl_contains(integration.filetypes, current_ft) then
+      setup_buffer(current_bufnr, integration)
+      render_buffer(current_bufnr, current_winnr, integration)
     end
   end
 end
