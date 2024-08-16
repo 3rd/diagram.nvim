@@ -38,10 +38,7 @@ With **lazy.nvim**:
         background = nil, -- nil | "transparent" | "white" | "#hex"
         theme = nil, -- nil | "default" | "dark" | "forest" | "neutral"
       },
-    },
-    integrations = {
-      require("diagram.integrations.markdown"),
-    },
+    }
   },
 },
 ```
