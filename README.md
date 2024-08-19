@@ -14,14 +14,15 @@ Renderers take source code as input and render it to an image, often by calling 
 \
 Integrations read buffers, extract diagram code, and dispatch work to the renderers.
 
-| Integration | Supported renderers |
-| ----------- | ------------------- |
-| `markdown`  | `mermaid`           |
-| `neorg`     | `mermaid`           |
+| Integration | Supported renderers   |
+| ----------- | --------------------- |
+| `markdown`  | `mermaid`, `plantuml` |
+| `neorg`     | `mermaid`, `plantuml` |
 
-| Renderer  | Requirements                                      |
-| --------- | ------------------------------------------------- |
-| `mermaid` | [mmdc](https://github.com/mermaid-js/mermaid-cli) |
+| Renderer   | Requirements                                      |
+| ---------- | ------------------------------------------------- |
+| `mermaid`  | [mmdc](https://github.com/mermaid-js/mermaid-cli) |
+| `plantuml` | [plantuml](https://plantuml.com/download)         |
 
 ### Installation
 
@@ -39,6 +40,9 @@ With **lazy.nvim**:
         background = nil, -- nil | "transparent" | "white" | "#hex"
         theme = nil, -- nil | "default" | "dark" | "forest" | "neutral"
         scale = 1, -- nil | 1 (default) | 2  | 3 | ...
+      },
+      plantuml = {
+        charset = nil,
       },
     }
   },

@@ -8,6 +8,9 @@ local state = {
       background = nil,
       theme = nil,
     },
+    plantuml = {
+      charset = nil,
+    },
   },
   integrations = {
     integrations.markdown,

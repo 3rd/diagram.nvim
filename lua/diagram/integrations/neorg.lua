@@ -10,6 +10,7 @@ local M = {
   filetypes = { "norg" },
   renderers = {
     renderers.mermaid,
+    renderers.plantuml,
   },
 }
 
@@ -55,13 +56,13 @@ M.query_buffer_diagrams = function(bufnr)
     elseif key == "tag_params" then
       current_language = value
     elseif key == "content" then
-      if current_language == "mermaid" then
+      if current_language == "mermaid" or current_language == "plantuml" then
         local _, _, end_row, end_col = node:range()
         current_range.end_row = end_row
         current_range.end_col = end_col
         table.insert(diagrams, {
           bufnr = buf,
-          renderer_id = "mermaid",
+          renderer_id = current_language,
           source = value,
           range = current_range,
         })

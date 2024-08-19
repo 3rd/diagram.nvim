@@ -10,6 +10,7 @@ local M = {
   filetypes = { "markdown" },
   renderers = {
     renderers.mermaid,
+    renderers.plantuml,
   },
 }
 
@@ -45,10 +46,10 @@ M.query_buffer_diagrams = function(bufnr)
       }
       current_language = value
     else
-      if current_language == "mermaid" then
+      if current_language == "mermaid" or current_language == "plantuml" then
         table.insert(diagrams, {
           bufnr = bufnr,
-          renderer_id = "mermaid",
+          renderer_id = current_language,
           source = value,
           range = current_range,
         })
