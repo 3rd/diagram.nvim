@@ -20,9 +20,8 @@ local state = {
 }
 
 local clear_buffer = function(bufnr)
-  local images = image_nvim.get_images({ buffer = bufnr })
-  for _, image in ipairs(images) do
-    image:clear()
+  for _, diagram in ipairs(state.diagrams) do
+    if diagram.bufnr == bufnr and diagram.image ~= nil then diagram.image:clear() end
   end
 end
 
