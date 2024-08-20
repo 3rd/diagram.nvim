@@ -2,7 +2,7 @@
 
 A Neovim plugin for rendering diagrams, powered by [image.nvim](https://github.com/3rd/image.nvim).
 \
-You'll **need to set up [image.nvim](https://github.com/3rd/image.nvim)** to use this plugin.
+You'll **need to set up [image.nvim](https://github.com/3rd/image.nvim)** to use this plugin, and either [Kitty](https://github.com/kovidgoyal/kitty) or [Überzug++](https://github.com/jstkdng/ueberzugpp).
 
 https://github.com/user-attachments/assets/cc71c122-3672-4bc6-b6fe-2ac36e36a78c
 
