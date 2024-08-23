@@ -4,7 +4,7 @@ A Neovim plugin for rendering diagrams, powered by [image.nvim](https://github.c
 \
 You'll **need to set up [image.nvim](https://github.com/3rd/image.nvim)** to use this plugin, and either [Kitty](https://github.com/kovidgoyal/kitty) or [Überzug++](https://github.com/jstkdng/ueberzugpp).
 
-https://github.com/user-attachments/assets/67545056-e95d-4cbe-a077-d6707349946d
+<https://github.com/user-attachments/assets/67545056-e95d-4cbe-a077-d6707349946d>
 
 ### Integrations & renderers
 
@@ -14,15 +14,16 @@ Renderers take source code as input and render it to an image, often by calling 
 \
 Integrations read buffers, extract diagram code, and dispatch work to the renderers.
 
-| Integration | Supported renderers   |
-| ----------- | --------------------- |
-| `markdown`  | `mermaid`, `plantuml` |
-| `neorg`     | `mermaid`, `plantuml` |
+| Integration | Supported renderers         |
+| ----------- | --------------------------- |
+| `markdown`  | `mermaid`, `plantuml`, `d2` |
+| `neorg`     | `mermaid`, `plantuml`, `d2` |
 
 | Renderer   | Requirements                                      |
 | ---------- | ------------------------------------------------- |
 | `mermaid`  | [mmdc](https://github.com/mermaid-js/mermaid-cli) |
 | `plantuml` | [plantuml](https://plantuml.com/download)         |
+| `d2`       | [d2](https://d2lang.com/)                         |
 
 ### Installation
 
@@ -43,6 +44,13 @@ With **lazy.nvim**:
       },
       plantuml = {
         charset = nil,
+      },
+      d2 = {
+        theme_id = nil,
+        dark_theme_id = nil,
+        scale = nil,
+        layout = nil,
+        sketch = nil,
       },
     }
   },
