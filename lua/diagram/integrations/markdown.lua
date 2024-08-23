@@ -11,6 +11,7 @@ local M = {
   renderers = {
     renderers.mermaid,
     renderers.plantuml,
+    renderers.d2,
   },
 }
 
@@ -46,7 +47,7 @@ M.query_buffer_diagrams = function(bufnr)
       }
       current_language = value
     else
-      if current_language == "mermaid" or current_language == "plantuml" then
+      if current_language == "mermaid" or current_language == "plantuml" or current_language == "d2" then
         table.insert(diagrams, {
           bufnr = bufnr,
           renderer_id = current_language,
