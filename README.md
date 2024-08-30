@@ -56,3 +56,36 @@ With **lazy.nvim**:
   },
 },
 ```
+
+### Usage
+
+To use the plugin, you need to set up the integrations and renderers in your Neovim configuration. Here's an example:
+
+```lua
+require("diagram").setup({
+  integrations = {
+    require("diagram.integrations.markdown"),
+    require("diagram.integrations.neorg"),
+  },
+  renderer_options = {
+    mermaid = {
+      theme = "forest",
+    },
+    plantuml = {
+      charset = "utf-8",
+    },
+    d2 = {
+      theme_id = 1,
+    },
+  },
+})
+```
+
+### API
+
+The plugin exposes the following API functions:
+
+- `setup(opts)`: Sets up the plugin with the given options.
+- `get_cache_dir()`: Returns the root cache directory.
+
+```
