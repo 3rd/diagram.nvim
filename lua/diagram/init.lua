@@ -116,6 +116,11 @@ local setup = function(opts)
   end
 end
 
+local get_cache_dir = function()
+  return vim.fn.stdpath("cache") .. "/diagram-cache"
+end
+
 return {
   setup = setup,
+  get_cache_dir = get_cache_dir,
 }
