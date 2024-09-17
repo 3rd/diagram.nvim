@@ -54,13 +54,19 @@ local render_buffer = function(bufnr, winnr, integration)
     local rendered_path = renderer.render(diagram.source, renderer_options)
     if not rendered_path then return end
 
+    local diagram_col = diagram.range.start_col
+    local diagram_row = diagram.range.start_row
+    if vim.bo[bufnr].filetype == "norg" then
+      diagram_row = diagram_row - 1
+    end
+    
     local image = image_nvim.from_file(rendered_path, {
       buffer = bufnr,
       window = winnr,
       with_virtual_padding = true,
       inline = true,
-      x = diagram.range.start_col,
-      y = diagram.range.start_row,
+      x = diagram_col,
+      y = diagram_row,
     })
     diagram.image = image
     table.insert(state.diagrams, diagram)
