@@ -35,8 +35,8 @@ M.query_buffer_diagrams = function(bufnr)
   for id, node in matches do
     local key = query.captures[id]
     local value = vim.treesitter.get_node_text(node, bufnr)
-    if node:parent():parent():type() == "block_quote" then
-	value = value:gsub("\n>", "\n"):gsub("^>", "")
+    if node:parent():parent() and node:parent():parent():type() == "block_quote" then
+      value = value:gsub("\n>", "\n"):gsub("^>", "")
     end
 
     if key == "info" then

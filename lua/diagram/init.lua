@@ -59,7 +59,7 @@ local render_buffer = function(bufnr, winnr, integration)
     if vim.bo[bufnr].filetype == "norg" then
       diagram_row = diagram_row - 1
     end
-    
+
     local image = image_nvim.from_file(rendered_path, {
       buffer = bufnr,
       window = winnr,
