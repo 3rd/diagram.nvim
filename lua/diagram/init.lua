@@ -7,6 +7,7 @@ local state = {
     mermaid = {
       background = nil,
       theme = nil,
+      scale = nil,
       width = nil,
       height = nil,
     },

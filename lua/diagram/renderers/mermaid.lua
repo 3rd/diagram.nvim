@@ -2,6 +2,8 @@
 ---@field background? string
 ---@field theme? string
 ---@field scale? number
+---@field width? number
+---@field height? number
 
 ---@type table<string, string>
 local cache = {} -- session cache
