@@ -61,11 +61,19 @@ M.render = function(source, options)
   end
 
   local command = table.concat(command_parts, " ")
-  vim.fn.system(command)
-  if vim.v.shell_error ~= 0 then
-    vim.notify("diagram/mermaid: mmdc failed to render diagram", vim.log.levels.ERROR)
-    return nil
-  end
+  vim.fn.jobstart(
+    command,
+    {
+      on_exit = function(job_id, exit_code, event)
+        local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
+        vim.api.nvim_out_write(msg .. "\n")
+      end,
+    }
+  )
+  -- if vim.v.shell_error ~= 0 then
+  --   vim.notify("diagram/mermaid: mmdc failed to render diagram", vim.log.levels.ERROR)
+  --   return nil
+  -- end
 
   cache[hash] = path
   return path
