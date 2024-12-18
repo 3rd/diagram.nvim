@@ -7,6 +7,8 @@ local state = {
     mermaid = {
       background = nil,
       theme = nil,
+      width = nil,
+      height = nil,
     },
     plantuml = {
       charset = nil,

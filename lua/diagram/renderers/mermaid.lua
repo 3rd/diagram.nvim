@@ -49,6 +49,14 @@ M.render = function(source, options)
     table.insert(command_parts, "-s")
     table.insert(command_parts, options.scale)
   end
+  if options.width then
+    table.insert(command_parts, "--width")
+    table.insert(command_parts, options.width)
+  end
+  if options.height then
+    table.insert(command_parts, "--height")
+    table.insert(command_parts, options.height)
+  end
 
   local command = table.concat(command_parts, " ")
   vim.fn.system(command)
