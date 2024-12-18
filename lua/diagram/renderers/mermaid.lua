@@ -61,9 +61,19 @@ M.render = function(source, options)
   end
 
   local command = table.concat(command_parts, " ")
+
+  local function on_event(job_id, data, event)
+    if data and #data > 0 then
+      local msg = string.format("[%s] Job %d: %s", event, job_id, table.concat(data, "\n"))
+      vim.api.nvim_out_write(msg .. "\n")
+    end
+  end
+
   vim.fn.jobstart(
     command,
     {
+      on_stdout = function(job_id, data, event) on_event(job_id, data, "stdout") end,
+      on_stderr = function(job_id, data, event) on_event(job_id, data, "stderr") end,
       on_exit = function(job_id, exit_code, event)
         local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
         vim.api.nvim_out_write(msg .. "\n")
