@@ -13,15 +13,15 @@ local M = {
 }
 
 -- fs cache
-local tmpdir = vim.fn.resolve(vim.fn.stdpath("cache") .. "/diagram-cache/mermaid")
-vim.fn.mkdir(tmpdir, "p")
+local cache_dir = vim.fn.resolve(vim.fn.stdpath("cache") .. "/diagram-cache/mermaid")
+vim.fn.mkdir(cache_dir, "p")
 
 ---@param source string
 ---@param options MermaidOptions
 ---@return string|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
-  local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
+  local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
   if vim.fn.filereadable(path) == 1 then return path end
 
   if not vim.fn.executable("mmdc") then error("diagram/mermaid: mmdc not found in PATH") end

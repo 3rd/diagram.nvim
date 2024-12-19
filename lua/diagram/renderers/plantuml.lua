@@ -9,8 +9,8 @@ local M = {
 }
 
 -- fs cache
-local tmpdir = vim.fn.resolve(vim.fn.stdpath("cache") .. "/diagram-cache/plantuml")
-vim.fn.mkdir(tmpdir, "p")
+local cache_dir = vim.fn.resolve(vim.fn.stdpath("cache") .. "/diagram-cache/plantuml")
+vim.fn.mkdir(cache_dir, "p")
 
 ---@param source string
 ---@param options PlantUMLOptions
@@ -18,7 +18,7 @@ vim.fn.mkdir(tmpdir, "p")
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
 
-  local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
+  local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
   if vim.fn.filereadable(path) == 1 then return path end
 
   if not vim.fn.executable("plantuml") then error("diagram/plantuml: plantuml not found in PATH") end
