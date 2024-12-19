@@ -6,7 +6,6 @@
 ---@field sketch? boolean
 
 ---@type table<string, string>
-local cache = {} -- session cache
 
 ---@class Renderer<D2Options>
 local M = {
@@ -22,9 +21,6 @@ vim.fn.mkdir(tmpdir, "p")
 ---@return string|nil
 M.render = function(source, options)
 	local hash = vim.fn.sha256(M.id .. ":" .. source)
-	if cache[hash] then
-		return cache[hash]
-	end
 
 	local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
 	if vim.fn.filereadable(path) == 1 then
@@ -70,7 +66,6 @@ M.render = function(source, options)
 		return nil
 	end
 
-	cache[hash] = path
 	return path
 end
 
