@@ -55,7 +55,7 @@ local render_buffer = function(bufnr, winnr, integration)
 
     local renderer_options = state.renderer_options[renderer.id] or {}
     local rendered_path = renderer.render(diagram.source, renderer_options)
-    if not rendered_path then return end
+    if vim.fn.filereadable(rendered_path) == 0 then return end
 
     local diagram_col = diagram.range.start_col
     local diagram_row = diagram.range.start_row
