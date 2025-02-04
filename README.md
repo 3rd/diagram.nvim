@@ -44,7 +44,7 @@ With **lazy.nvim**:
         scale = 1, -- nil | 1 (default) | 2  | 3 | ...
         width = nil, -- nil | 800 | 400 | ...
         height = nil, -- nil | 600 | 300 | ...
-        pupperteer = "home/<user>/.config/puppeteer/puppeteer.config.json", --nil
+        pupperteer_path = "home/<user>/.config/puppeteer/puppeteer.config.json", --nil
       },
       plantuml = {
         charset = nil,
@@ -65,8 +65,11 @@ With **lazy.nvim**:
   },
 },
 ```
+> [!info] 
+> pupperteer_path should be the path to your puppeteer.config.json, set the correct path and user. 
+
 #### puppeteer options
-Puppeteer config file can be found in ~/.config/puppeteer/puppeteer.config.json and able to set chrome-headless-shell versión 
+Puppeteer config file can be found in ~/.config/puppeteer/puppeteer.config.json and able to set chrome-headless-shell versión, required by mermaid-cli.
 ```json
 {
   "executablePath": "/home/<user>/.cache/puppeteer/chrome-headless-shell/linux-132.0.6834.110/chrome-headless-shell-linux64/chrome-headless-shell",

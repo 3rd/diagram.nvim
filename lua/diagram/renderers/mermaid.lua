@@ -2,7 +2,7 @@
 ---@field background? string
 ---@field theme? string
 ---@field scale? number
----@field pupperteer? string
+---@field pupperteer_path? string
 
 ---@type table<string, string>
 local cache = {} -- session cache
@@ -64,13 +64,13 @@ M.render = function(source, options)
 		table.insert(command_parts, "--height")
 		table.insert(command_parts, options.height)
 	end
-	if options.pupperteer then
+	if options.pupperteer_path then
 		table.insert(command_parts, "-p")
-		table.insert(command_parts, options.pupperteer)
+		table.insert(command_parts, options.pupperteer_path)
 	end
 
 	local command = table.concat(command_parts, " ")
-	vim.notify(command)
+	-- vim.notify(command)
 	vim.fn.system(command)
 	if vim.v.shell_error ~= 0 then
 		vim.notify("diagram/mermaid: mmdc failed to render diagram", vim.log.levels.ERROR)
