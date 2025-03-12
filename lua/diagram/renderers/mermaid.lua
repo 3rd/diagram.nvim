@@ -18,7 +18,7 @@ vim.fn.mkdir(cache_dir, "p")
 
 ---@param source string
 ---@param options MermaidOptions
----@return string|nil
+---@return table|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
   local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
@@ -61,12 +61,12 @@ M.render = function(source, options)
 
   local function on_event(job_id, data, event)
     if data and #data > 0 then
-      local msg = string.format("[%s] Job %d: %s", event, job_id, table.concat(data, "\n"))
+      local msg = string.format("[%s] Job %d", event, job_id)
       vim.api.nvim_out_write(msg .. "\n")
     end
   end
 
-  vim.fn.jobstart(
+  local job_id = vim.fn.jobstart(
     command,
     {
       on_stdout = function(job_id, data, event) on_event(job_id, data, "stdout") end,
@@ -82,7 +82,7 @@ M.render = function(source, options)
   --   return nil
   -- end
 
-  return path
+  return { file_path = path, job_id = job_id }
 end
 
 return M

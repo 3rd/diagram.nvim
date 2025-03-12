@@ -54,26 +54,45 @@ local render_buffer = function(bufnr, winnr, integration)
     assert(renderer, "diagram: cannot find renderer with id `" .. diagram.renderer_id .. "`")
 
     local renderer_options = state.renderer_options[renderer.id] or {}
-    local rendered_path = renderer.render(diagram.source, renderer_options)
-    if vim.fn.filereadable(rendered_path) == 0 then return end
+    local renderer_result = renderer.render(diagram.source, renderer_options)
 
-    local diagram_col = diagram.range.start_col
-    local diagram_row = diagram.range.start_row
-    if vim.bo[bufnr].filetype == "norg" then
-      diagram_row = diagram_row - 1
+    local function render_image()
+      if vim.fn.filereadable(renderer_result.file_path) == 0 then return end
+
+      local diagram_col = diagram.range.start_col
+      local diagram_row = diagram.range.start_row
+      if vim.bo[bufnr].filetype == "norg" then
+        diagram_row = diagram_row - 1
+      end
+
+      local image = image_nvim.from_file(renderer_result.file_path, {
+        buffer = bufnr,
+        window = winnr,
+        with_virtual_padding = true,
+        inline = true,
+        x = diagram_col,
+        y = diagram_row,
+      })
+      diagram.image = image
+      table.insert(state.diagrams, diagram)
+      image:render()
     end
 
-    local image = image_nvim.from_file(rendered_path, {
-      buffer = bufnr,
-      window = winnr,
-      with_virtual_padding = true,
-      inline = true,
-      x = diagram_col,
-      y = diagram_row,
-    })
-    diagram.image = image
-    table.insert(state.diagrams, diagram)
-    image:render()
+    if renderer_result.job_id then
+      -- Use a timer to poll the job's completion status every 100ms.
+      local timer = vim.loop.new_timer()
+      timer:start(0, 100, vim.schedule_wrap(function()
+        local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
+        if result[1] ~= -1 then
+          timer:stop()
+          timer:close()
+          render_image()
+        end
+      end))
+    else
+      render_image()
+    end
+
   end
 end
 

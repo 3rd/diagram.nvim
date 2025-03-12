@@ -14,12 +14,12 @@ vim.fn.mkdir(cache_dir, "p")
 
 ---@param source string
 ---@param options PlantUMLOptions
----@return string|nil
+---@return table|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
 
   local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
-  if vim.fn.filereadable(path) == 1 then return path end
+  if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
   if not vim.fn.executable("plantuml") then error("diagram/plantuml: plantuml not found in PATH") end
 
@@ -39,13 +39,27 @@ M.render = function(source, options)
   table.insert(command_parts, tmpsource)
 
   local command = table.concat(command_parts, " ")
-  local output = vim.fn.system(command .. " > " .. vim.fn.shellescape(path))
-  if vim.v.shell_error ~= 0 then
-    vim.notify("diagram/plantuml: plantuml failed to render diagram. Error: " .. output, vim.log.levels.ERROR)
-    return nil
+
+  local function on_event(job_id, data, event)
+    if data and #data > 0 then
+      local msg = string.format("[%s] Job %d", event, job_id)
+      vim.api.nvim_out_write(msg .. "\n")
+    end
   end
 
-  return path
+  local job_id = vim.fn.jobstart(
+    command .. " > " .. vim.fn.shellescape(path),
+    {
+      on_stdout = function(job_id, data, event) on_event(job_id, data, "stdout") end,
+      on_stderr = function(job_id, data, event) on_event(job_id, data, "stderr") end,
+      on_exit = function(job_id, exit_code, event)
+        local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
+        vim.api.nvim_out_write(msg .. "\n")
+      end,
+    }
+  )
+
+  return { file_path = path, job_id = job_id }
 end
 
 return M
