@@ -18,7 +18,7 @@ vim.fn.mkdir(cache_dir, "p")
 
 ---@param source string
 ---@param options D2Options
----@return string|nil
+---@return table|nil
 M.render = function(source, options)
 	local hash = vim.fn.sha256(M.id .. ":" .. source)
 
@@ -37,7 +37,7 @@ M.render = function(source, options)
 	local command_parts = {
 		"d2",
 		tmpsource,
-		path,
+		path .. ".new", -- HACK: write to .new to prevent rendering a incomplete file
 	}
 	if options.theme_id then
 		table.insert(command_parts, "-t")
@@ -60,13 +60,25 @@ M.render = function(source, options)
 	end
 
 	local command = table.concat(command_parts, " ")
-	vim.fn.system(command)
-	if vim.v.shell_error ~= 0 then
-		vim.notify("diagram/d2: d2 failed to render diagram", vim.log.levels.ERROR)
-		return nil
-	end
 
-	return path
+  local job_id = vim.fn.jobstart(
+    command .. ".new", -- HACK: write to .new to prevent rendering a incomplete file
+    {
+      on_stdout = function(job_id, data, event) end,
+      on_stderr = function(job_id, data, event)
+        local error_msg = table.concat(data, "\n")
+        vim.notify("diagram/d2: d2 failed to render diagram" .. error_msg, vim.log.levels.ERROR)
+        return nil
+      end,
+      on_exit = function(job_id, exit_code, event)
+        -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
+        -- vim.api.nvim_out_write(msg .. "\n")
+        vim.fn.rename(path .. ".new", path) -- HACK: rename to remove .new
+      end,
+    }
+  )
+
+  return { file_path = path, job_id = job_id }
 end
 
 return M
