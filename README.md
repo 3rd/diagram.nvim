@@ -14,16 +14,17 @@ Renderers take source code as input and render it to an image, often by calling 
 \
 Integrations read buffers, extract diagram code, and dispatch work to the renderers.
 
-| Integration | Supported renderers         |
-| ----------- | --------------------------- |
-| `markdown`  | `mermaid`, `plantuml`, `d2` |
-| `neorg`     | `mermaid`, `plantuml`, `d2` |
+| Integration | Supported renderers                          |
+| ----------- | ------------------------------------------- |
+| `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
+| `neorg`     | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 
 | Renderer   | Requirements                                      |
 | ---------- | ------------------------------------------------- |
 | `mermaid`  | [mmdc](https://github.com/mermaid-js/mermaid-cli) |
 | `plantuml` | [plantuml](https://plantuml.com/download)         |
 | `d2`       | [d2](https://d2lang.com/)                         |
+| `gnuplot`  | [gnuplot](http://gnuplot.info/)                   |
 
 ### Installation
 
@@ -54,6 +55,11 @@ With **lazy.nvim**:
         layout = nil,
         sketch = nil,
       },
+      gnuplot = {
+        size = nil, -- nil | "800,600" | ...
+        font = nil, -- nil | "Arial,12" | ...
+        theme = nil, -- nil | "light" | "dark" | custom theme string
+      },
     }
   },
 },
@@ -79,6 +85,10 @@ require("diagram").setup({
     d2 = {
       theme_id = 1,
     },
+    gnuplot = {
+      theme = "dark",
+      size = "800,600",
+    },
   },
 })
 ```
@@ -89,5 +99,3 @@ The plugin exposes the following API functions:
 
 - `setup(opts)`: Sets up the plugin with the given options.
 - `get_cache_dir()`: Returns the root cache directory.
-
-```
