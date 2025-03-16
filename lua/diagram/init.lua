@@ -110,8 +110,12 @@ local setup = function(opts)
   local current_ft = vim.bo[current_bufnr].filetype
 
   local setup_buffer = function(bufnr, integration)
+    local events = {
+      render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
+      clear_buffer = {"BufLeave"},
+    }
     -- render
-    vim.api.nvim_create_autocmd({ "InsertLeave", "BufWinEnter", "TextChanged" }, {
+    vim.api.nvim_create_autocmd(events.render_buffer, {
       buffer = bufnr,
       callback = function(buf_ev)
         local winnr = buf_ev.event == "BufWinEnter" and buf_ev.winnr or vim.api.nvim_get_current_win()
@@ -120,12 +124,14 @@ local setup = function(opts)
     })
 
     -- clear
-    vim.api.nvim_create_autocmd("InsertEnter", {
-      buffer = bufnr,
-      callback = function()
-        clear_buffer(bufnr)
-      end,
-    })
+    if events.clear_buffer then
+      vim.api.nvim_create_autocmd(events.clear_buffer, {
+        buffer = bufnr,
+        callback = function()
+          clear_buffer(bufnr)
+        end,
+      })
+    end
   end
 
   -- setup integrations
