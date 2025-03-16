@@ -23,9 +23,7 @@ M.render = function(source, options)
 	local hash = vim.fn.sha256(M.id .. ":" .. source)
 
 	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
-	if vim.fn.filereadable(path) == 1 then
-		return path
-	end
+  if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
 	if not vim.fn.executable("d2") then
 		error("diagram/d2: d2 not found in PATH")

@@ -22,7 +22,7 @@ vim.fn.mkdir(cache_dir, "p")
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
   local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
-  if vim.fn.filereadable(path) == 1 then return path end
+  if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
   if not vim.fn.executable("mmdc") then error("diagram/mermaid: mmdc not found in PATH") end
 
