@@ -3,6 +3,10 @@ local integrations = require("diagram/integrations")
 
 ---@class State
 local state = {
+  events = {
+    render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
+    clear_buffer = {"BufLeave"},
+  },
   renderer_options = {
     mermaid = {
       background = nil,
@@ -112,12 +116,8 @@ local setup = function(opts)
   local current_ft = vim.bo[current_bufnr].filetype
 
   local setup_buffer = function(bufnr, integration)
-    local events = {
-      render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
-      clear_buffer = {"BufLeave"},
-    }
     -- render
-    vim.api.nvim_create_autocmd(events.render_buffer, {
+    vim.api.nvim_create_autocmd(state.events.render_buffer, {
       buffer = bufnr,
       callback = function(buf_ev)
         local winnr = buf_ev.event == "BufWinEnter" and buf_ev.winnr or vim.api.nvim_get_current_win()
@@ -126,8 +126,8 @@ local setup = function(opts)
     })
 
     -- clear
-    if events.clear_buffer then
-      vim.api.nvim_create_autocmd(events.clear_buffer, {
+    if state.events.clear_buffer then
+      vim.api.nvim_create_autocmd(state.events.clear_buffer, {
         buffer = bufnr,
         callback = function()
           clear_buffer(bufnr)
