@@ -37,7 +37,7 @@ M.render = function(source, options)
 	local command_parts = {
 		"d2",
 		tmpsource,
-		path .. ".new", -- HACK: write to .new to prevent rendering a incomplete file
+		path .. ".new.png", -- HACK: write to .new.png to prevent rendering a incomplete file
 	}
 	if options.theme_id then
 		table.insert(command_parts, "-t")
@@ -62,7 +62,7 @@ M.render = function(source, options)
 	local command = table.concat(command_parts, " ")
 
   local job_id = vim.fn.jobstart(
-    command .. ".new", -- HACK: write to .new to prevent rendering a incomplete file
+    command,
     {
       on_stdout = function(job_id, data, event) end,
       on_stderr = function(job_id, data, event)
@@ -73,7 +73,7 @@ M.render = function(source, options)
       on_exit = function(job_id, exit_code, event)
         -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
         -- vim.api.nvim_out_write(msg .. "\n")
-        vim.fn.rename(path .. ".new", path) -- HACK: rename to remove .new
+        vim.fn.rename(path .. ".new.png", path) -- HACK: rename to remove .new.png
       end,
     }
   )
