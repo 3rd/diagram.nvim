@@ -71,7 +71,8 @@ M.render = function(source, options)
     {
       on_stdout = function(job_id, data, event) on_event(job_id, data, "stdout") end,
       on_stderr = function(job_id, data, event) on_event(job_id, data, "stderr")
-        vim.notify("diagram/mermaid: mmdc failed to render diagram. Error: " .. data, vim.log.levels.ERROR)
+        local error_msg = table.concat(data, "\n")
+        vim.notify("diagram/mermaid: mmdc failed to render diagram. Error: " .. error_msg, vim.log.levels.ERROR)
         return nil
       end,
       on_exit = function(job_id, exit_code, event)
