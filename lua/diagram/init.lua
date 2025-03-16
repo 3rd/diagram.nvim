@@ -40,7 +40,7 @@ end
 ---@param integration Integration
 local render_buffer = function(bufnr, winnr, integration)
   local diagrams = integration.query_buffer_diagrams(bufnr)
-
+  local rendered_flag = false
   for _, diagram in ipairs(diagrams) do
     ---@type Renderer
     local renderer = nil
@@ -73,9 +73,12 @@ local render_buffer = function(bufnr, winnr, integration)
         y = diagram_row,
       })
       diagram.image = image
-      table.insert(state.diagrams, diagram)
 
-      clear_buffer(bufnr)
+      if not rendered_flag then
+        clear_buffer(bufnr)
+        rendered_flag = true
+      end
+      table.insert(state.diagrams, diagram)
       image:render()
     end
 
@@ -93,7 +96,6 @@ local render_buffer = function(bufnr, winnr, integration)
     else
       render_image()
     end
-
   end
 end
 
