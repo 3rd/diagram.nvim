@@ -48,13 +48,14 @@ M.render = function(source, options)
   end
 
   local job_id = vim.fn.jobstart(
-    command .. " > " .. vim.fn.shellescape(path),
+    command .. " > " .. vim.fn.shellescape(path .. ".new"), -- HACK: write to .new to prevent rendering a incomplete file
     {
       on_stdout = function(job_id, data, event) on_event(job_id, data, "stdout") end,
       on_stderr = function(job_id, data, event) on_event(job_id, data, "stderr") end,
       on_exit = function(job_id, exit_code, event)
         local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
         vim.api.nvim_out_write(msg .. "\n")
+        vim.fn.rename(path .. ".new", path) -- HACK: rename to remove .new
       end,
     }
   )

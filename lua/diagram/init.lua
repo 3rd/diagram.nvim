@@ -39,7 +39,6 @@ end
 ---@param winnr number
 ---@param integration Integration
 local render_buffer = function(bufnr, winnr, integration)
-  clear_buffer(bufnr)
   local diagrams = integration.query_buffer_diagrams(bufnr)
 
   for _, diagram in ipairs(diagrams) do
@@ -75,6 +74,8 @@ local render_buffer = function(bufnr, winnr, integration)
       })
       diagram.image = image
       table.insert(state.diagrams, diagram)
+
+      clear_buffer(bufnr)
       image:render()
     end
 
