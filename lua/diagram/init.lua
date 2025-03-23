@@ -85,12 +85,17 @@ local render_buffer = function(bufnr, winnr, integration)
     if renderer_result.job_id then
       -- Use a timer to poll the job's completion status every 100ms.
       local timer = vim.loop.new_timer()
+      if not timer then return end
       timer:start(0, 100, vim.schedule_wrap(function()
         local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
         if result[1] ~= -1 then
-          timer:stop()
-          timer:close()
-          render_image()
+          if timer:is_active() then
+            timer:stop()
+          end
+          if not timer:is_closing() then
+            timer:close()
+            render_image()
+          end
         end
       end))
     else
