@@ -17,7 +17,7 @@ vim.fn.mkdir(tmpdir, "p")
 
 ---@param source string
 ---@param options GnuplotOptions
----@return string|nil
+---@return table|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
   if cache[hash] then
@@ -25,9 +25,7 @@ M.render = function(source, options)
   end
 
   local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
-  if vim.fn.filereadable(path) == 1 then
-    return path
-  end
+  if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
   if not vim.fn.executable("gnuplot") then
     error("diagram/gnuplot: gnuplot not found in PATH")
@@ -91,18 +89,26 @@ M.render = function(source, options)
   vim.fn.writefile(vim.split(table.concat(script, "\n"), "\n"), tmpsource)
 
   local command = string.format("gnuplot %s", tmpsource)
-  local output = vim.fn.system(command)
+  local job_id = vim.fn.jobstart(
+    command,
+    {
+      on_stdout = function(job_id, data, event) end,
+      on_stderr = function(job_id, data, event)
+        local error_msg = table.concat(data, "\n")
+        vim.notify("diagram/gnuplot: gnuplot failed to render diagram" .. error_msg, vim.log.levels.ERROR)
+        return nil
+      end,
+      on_exit = function(job_id, exit_code, event)
+        -- Clean up temporary script file
+        vim.fn.delete(tmpsource)
+        cache[hash] = path
+        -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
+        -- vim.api.nvim_out_write(msg .. "\n")
+      end,
+    }
+  )
 
-  if vim.v.shell_error ~= 0 then
-    vim.notify("diagram/gnuplot: gnuplot failed to render diagram\n" .. output, vim.log.levels.ERROR)
-    return nil
-  end
-
-  -- Clean up temporary script file
-  vim.fn.delete(tmpsource)
-
-  cache[hash] = path
-  return path
+  return { file_path = path, job_id = job_id }
 end
 
 return M

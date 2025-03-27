@@ -37,6 +37,10 @@ With **lazy.nvim**:
     "3rd/image.nvim",
   },
   opts = { -- you can just pass {}, defaults below
+    events = {
+      render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
+      clear_buffer = {"BufLeave"},
+    },
     renderer_options = {
       mermaid = {
         background = nil, -- nil | "transparent" | "white" | "#hex"
