@@ -1,5 +1,6 @@
 local image_nvim = require("image")
 local integrations = require("diagram/integrations")
+local hover = require("diagram/hover")
 
 ---@class State
 local state = {
@@ -110,6 +111,7 @@ local setup = function(opts)
   if not ok then error("diagram: missing dependency `3rd/image.nvim`") end
 
   state.integrations = opts.integrations or state.integrations
+  state.events = vim.tbl_deep_extend("force", state.events, opts.events or {})
   state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
 
   local current_bufnr = vim.api.nvim_get_current_buf()
@@ -146,10 +148,15 @@ local setup = function(opts)
       end,
     })
 
-    -- first render
-    if vim.tbl_contains(integration.filetypes, current_ft) then
+    -- first render (only if render events are enabled)
+    if vim.tbl_contains(integration.filetypes, current_ft) and 
+       state.events.render_buffer and 
+       #state.events.render_buffer > 0 then
       setup_buffer(current_bufnr, integration)
       render_buffer(current_bufnr, current_winnr, integration)
+    elseif vim.tbl_contains(integration.filetypes, current_ft) then
+      -- Still setup buffer for potential hover usage but don't auto-render
+      setup_buffer(current_bufnr, integration)
     end
   end
 end
@@ -158,7 +165,12 @@ local get_cache_dir = function()
   return vim.fn.stdpath("cache") .. "/diagram-cache"
 end
 
+local show_diagram_hover = function()
+  hover.hover_at_cursor(state.integrations, state.renderer_options)
+end
+
 return {
   setup = setup,
   get_cache_dir = get_cache_dir,
+  show_diagram_hover = show_diagram_hover,
 }

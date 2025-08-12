@@ -103,3 +103,4 @@ The plugin exposes the following API functions:
 
 - `setup(opts)`: Sets up the plugin with the given options.
 - `get_cache_dir()`: Returns the root cache directory.
+- `show_diagram_hover()`: Shows the diagram at cursor in a new tab (for manual keybinding).
