@@ -2,6 +2,19 @@ local image_nvim = require("image")
 
 local M = {}
 
+local function show_loading_notification(diagram_type)
+  vim.notify("Loading " .. diagram_type .. " diagram...", vim.log.levels.INFO, { 
+    timeout = 5000 
+  })
+end
+
+local function show_ready_notification()
+  vim.notify("✓ Diagram ready", vim.log.levels.INFO, { 
+    replace = true,
+    timeout = 1500 
+  })
+end
+
 -- Helper function to calculate the full code block range from existing diagram data
 local get_extended_range = function(bufnr, diagram)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -108,6 +121,9 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
       return
     end
     
+    -- Show ready notification to replace loading message
+    show_ready_notification()
+    
     -- Create a new tab for better image.nvim support
     vim.cmd("tabnew")
     local buf = vim.api.nvim_get_current_buf()
@@ -195,6 +211,7 @@ M.hover_at_cursor = function(integrations, renderer_options)
     return
   end
   
+  show_loading_notification(diagram.renderer_id)
   M.show_diagram_hover(diagram, integrations, renderer_options)
 end
 
