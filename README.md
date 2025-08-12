@@ -104,3 +104,56 @@ The plugin exposes the following API functions:
 - `setup(opts)`: Sets up the plugin with the given options.
 - `get_cache_dir()`: Returns the root cache directory.
 - `show_diagram_hover()`: Shows the diagram at cursor in a new tab (for manual keybinding).
+
+### Diagram Hover Feature
+
+You can add a keymap to view diagrams in a dedicated tab. Place your cursor inside any diagram code block and press the mapped key to open the rendered diagram in a new tab.
+
+**Important**: This keymap configuration is essential for manual diagram viewing, especially when you have automatic rendering disabled.
+
+```lua
+{
+  "3rd/diagram.nvim",
+  dependencies = {
+    "3rd/image.nvim",
+  },
+  opts = {
+    -- Disable automatic rendering for manual-only workflow
+    events = {
+      render_buffer = {}, -- Empty = no automatic rendering
+      clear_buffer = { "BufLeave" },
+    },
+    renderer_options = {
+      mermaid = {
+        theme = "dark",
+        scale = 2,
+      },
+    },
+  },
+  keys = {
+    {
+      "K", -- or any key you prefer
+      function()
+        require("diagram").show_diagram_hover()
+      end,
+      mode = "n",
+      ft = { "markdown", "norg" }, -- Only in these filetypes
+      desc = "Show diagram in new tab",
+    },
+  },
+},
+```
+
+**Key Configuration Details:**
+- `"K"` - The key to press (can be changed to any key like `"<leader>d"`, `"gd"`, etc.)
+- `ft = { "markdown", "norg" }` - Only activates in markdown and neorg files
+- The function calls `require("diagram").show_diagram_hover()` to display the diagram
+
+**Features:**
+- **Cursor detection**: Works when cursor is anywhere inside diagram code blocks
+- **New tab display**: Opens diagram in a dedicated tab with proper image rendering
+- **Multiple diagram types**: Supports mermaid, plantuml, d2, and gnuplot
+- **Easy navigation**: 
+  - `q` or `Esc` to close the diagram tab
+  - `o` to open the image with system viewer (Preview, etc.)
+- **Async rendering**: Handles both cached and newly-rendered diagrams
