@@ -2,6 +2,38 @@ local image_nvim = require("image")
 
 local M = {}
 
+-- Helper function to calculate the full code block range from existing diagram data
+local get_extended_range = function(bufnr, diagram)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local start_row = diagram.range.start_row
+  local end_row = diagram.range.end_row
+  
+  -- Look backwards from start_row to find the opening ```
+  for i = start_row, 0, -1 do
+    local line = lines[i + 1] -- Lua is 1-indexed, TreeSitter is 0-indexed
+    if line and line:match("^%s*```") then
+      start_row = i
+      break
+    end
+  end
+  
+  -- Look forwards to find the closing ```
+  for i = end_row, #lines - 1 do
+    local line = lines[i + 1] -- Lua is 1-indexed, TreeSitter is 0-indexed  
+    if line and line:match("^%s*```%s*$") then
+      end_row = i
+      break
+    end
+  end
+  
+  return {
+    start_row = start_row,
+    start_col = 0,
+    end_row = end_row,
+    end_col = 0,
+  }
+end
+
 ---@param bufnr number
 ---@param integrations Integration[]
 ---@return Diagram|nil
@@ -24,7 +56,10 @@ local get_diagram_at_cursor = function(bufnr, integrations)
   
   local diagrams = integration.query_buffer_diagrams(bufnr)
   for _, diagram in ipairs(diagrams) do
-    if row >= diagram.range.start_row and row <= diagram.range.end_row then
+    -- Expand the detection range to include the entire code block
+    local extended_range = get_extended_range(bufnr, diagram)
+    
+    if row >= extended_range.start_row and row <= extended_range.end_row then
       return diagram
     end
   end

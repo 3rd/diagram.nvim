@@ -119,7 +119,11 @@ local setup = function(opts)
   local current_ft = vim.bo[current_bufnr].filetype
 
   local setup_buffer = function(bufnr, integration)
-    -- render
+    -- render (only if events are configured)
+    if not state.events.render_buffer or #state.events.render_buffer == 0 then
+      return
+    end
+    
     vim.api.nvim_create_autocmd(state.events.render_buffer, {
       buffer = bufnr,
       callback = function(buf_ev)
