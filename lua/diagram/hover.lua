@@ -175,7 +175,7 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
     end, { buffer = buf, desc = "Close diagram tab" })
     
     vim.keymap.set("n", "o", function()
-      vim.fn.system("open " .. vim.fn.shellescape(renderer_result.file_path))
+      vim.ui.open(renderer_result.file_path)
     end, { buffer = buf, desc = "Open image with system viewer" })
   end
   
