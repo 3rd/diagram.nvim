@@ -75,6 +75,7 @@ local render_buffer = function(bufnr, winnr, integration)
         inline = true,
         x = diagram_col,
         y = diagram_row,
+        render_offset_top = 2,
       })
       diagram.image = image
 
