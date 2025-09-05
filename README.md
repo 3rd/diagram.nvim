@@ -48,9 +48,11 @@ With **lazy.nvim**:
         scale = 1, -- nil | 1 (default) | 2  | 3 | ...
         width = nil, -- nil | 800 | 400 | ...
         height = nil, -- nil | 600 | 300 | ...
+        cli_args = nil, -- nil | { "--no-sandbox" } | { "-p", "/path/to/puppeteer" } | ...
       },
       plantuml = {
         charset = nil,
+        cli_args = nil, -- nil | { "-Djava.awt.headless=true" } | ...
       },
       d2 = {
         theme_id = nil,
@@ -58,16 +60,44 @@ With **lazy.nvim**:
         scale = nil,
         layout = nil,
         sketch = nil,
+        cli_args = nil, -- nil | { "--pad", "0" } | ...
       },
       gnuplot = {
         size = nil, -- nil | "800,600" | ...
         font = nil, -- nil | "Arial,12" | ...
         theme = nil, -- nil | "light" | "dark" | custom theme string
+        cli_args = nil, -- nil | { "-p" } | { "-c", "config.plt" } | ...
       },
     }
   },
 },
 ```
+
+### Custom CLI Arguments
+
+You can pass custom command-line arguments to any renderer using the `cli_args` option.
+
+**Common Use Cases:**
+
+1. **Fixing mmdc sandboxing issues (Nix/AppImage):**
+   ```lua
+   renderer_options = {
+     mermaid = {
+       cli_args = { "--no-sandbox" },
+     },
+   }
+   ```
+
+2. **Custom d2 padding:**
+   ```lua
+   renderer_options = {
+     d2 = {
+       cli_args = { "--pad", "0" },
+     },
+   }
+   ```
+
+The `cli_args` are inserted immediately after the executable name and before any standard arguments.
 
 ### Usage
 
@@ -153,7 +183,7 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
 - **Cursor detection**: Works when cursor is anywhere inside diagram code blocks
 - **New tab display**: Opens diagram in a dedicated tab with proper image rendering
 - **Multiple diagram types**: Supports mermaid, plantuml, d2, and gnuplot
-- **Easy navigation**: 
+- **Easy navigation**:
   - `q` or `Esc` to close the diagram tab
   - `o` to open the image with system viewer (Preview, etc.)
 - **Async rendering**: Handles both cached and newly-rendered diagrams

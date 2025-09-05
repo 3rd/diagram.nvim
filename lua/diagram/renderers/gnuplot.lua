@@ -2,6 +2,7 @@
 ---@field size? string      -- output size (e.g. "800,600")
 ---@field font? string      -- font settings
 ---@field theme? string     -- light/dark theme settings
+---@field cli_args? string[]
 
 ---@type table<string, string>
 local cache = {} -- session cache
@@ -20,15 +21,14 @@ vim.fn.mkdir(tmpdir, "p")
 ---@return table|nil
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
-  if cache[hash] then
-    return cache[hash]
-  end
+  if cache[hash] then return cache[hash] end
 
   local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
   if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
   if not vim.fn.executable("gnuplot") then
-    error("diagram/gnuplot: gnuplot not found in PATH")
+    vim.notify("gnuplot not found in PATH. Please install gnuplot to use gnuplot diagrams.", vim.log.levels.ERROR, { title = "Diagram.nvim" })
+    return nil
   end
 
   local tmpsource = vim.fn.tempname()
@@ -38,13 +38,9 @@ M.render = function(source, options)
   table.insert(script, "set terminal pngcairo")
   table.insert(script, string.format("set output '%s'", path))
 
-  if options.size then
-    table.insert(script, string.format("set size %s", options.size))
-  end
+  if options.size then table.insert(script, string.format("set size %s", options.size)) end
 
-  if options.font then
-    table.insert(script, string.format("set terminal pngcairo font '%s'", options.font))
-  end
+  if options.font then table.insert(script, string.format("set terminal pngcairo font '%s'", options.font)) end
 
   -- Add theme settings
   if options.theme == "dark" then
@@ -78,8 +74,9 @@ M.render = function(source, options)
   elseif type(options.theme) == "string" then
     -- treat as a custom theme
     table.insert(script, options.theme)
-  else
-    error("diagram/gnuplot: invalid theme option")
+  elseif options.theme ~= nil then
+    vim.notify("Invalid gnuplot theme option. Must be 'light', 'dark', or a custom theme string.", vim.log.levels.ERROR, { title = "Diagram.nvim" })
+    return nil
   end
 
   -- Add the user's source plot commands
@@ -88,25 +85,32 @@ M.render = function(source, options)
   -- Write the complete script to temporary file
   vim.fn.writefile(vim.split(table.concat(script, "\n"), "\n"), tmpsource)
 
-  local command = string.format("gnuplot %s", tmpsource)
-  local job_id = vim.fn.jobstart(
-    command,
-    {
-      on_stdout = function(job_id, data, event) end,
-      on_stderr = function(job_id, data, event)
-        local error_msg = table.concat(data, "\n")
-        vim.notify("diagram/gnuplot: gnuplot failed to render diagram" .. error_msg, vim.log.levels.ERROR)
-        return nil
-      end,
-      on_exit = function(job_id, exit_code, event)
-        -- Clean up temporary script file
-        vim.fn.delete(tmpsource)
-        cache[hash] = path
-        -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
-        -- vim.api.nvim_out_write(msg .. "\n")
-      end,
-    }
-  )
+  -- Build command with optional cli_args
+  local command_parts = { "gnuplot" }
+
+  -- Add custom CLI arguments if provided
+  if options.cli_args and #options.cli_args > 0 then vim.list_extend(command_parts, options.cli_args) end
+
+  -- Add the script file
+  table.insert(command_parts, tmpsource)
+
+  local command = table.concat(command_parts, " ")
+  local job_id = vim.fn.jobstart(command, {
+    on_stdout = function(job_id, data, event) end,
+    on_stderr = function(job_id, data, event)
+      local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+      if error_msg ~= "" then
+        vim.notify("Failed to render gnuplot diagram:\n" .. error_msg, vim.log.levels.ERROR, { title = "Diagram.nvim" })
+      end
+    end,
+    on_exit = function(job_id, exit_code, event)
+      -- Clean up temporary script file
+      vim.fn.delete(tmpsource)
+      cache[hash] = path
+      -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
+      -- vim.api.nvim_out_write(msg .. "\n")
+    end,
+  })
 
   return { file_path = path, job_id = job_id }
 end

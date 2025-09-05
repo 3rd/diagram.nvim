@@ -1,12 +1,12 @@
+local hover = require("diagram/hover")
 local image_nvim = require("image")
 local integrations = require("diagram/integrations")
-local hover = require("diagram/hover")
 
 ---@class State
 local state = {
   events = {
     render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
-    clear_buffer = {"BufLeave"},
+    clear_buffer = { "BufLeave" },
   },
   renderer_options = {
     mermaid = {
@@ -15,9 +15,11 @@ local state = {
       scale = nil,
       width = nil,
       height = nil,
+      cli_args = nil,
     },
     plantuml = {
       charset = nil,
+      cli_args = nil,
     },
     d2 = {
       theme_id = nil,
@@ -25,6 +27,13 @@ local state = {
       scale = nil,
       layout = nil,
       sketch = nil,
+      cli_args = nil,
+    },
+    gnuplot = {
+      size = nil,
+      font = nil,
+      theme = nil,
+      cli_args = nil,
     },
   },
   integrations = {
@@ -55,19 +64,25 @@ local render_buffer = function(bufnr, winnr, integration)
         break
       end
     end
-    assert(renderer, "diagram: cannot find renderer with id `" .. diagram.renderer_id .. "`")
+    if not renderer then
+      vim.notify("Unknown diagram renderer: " .. diagram.renderer_id, vim.log.levels.ERROR, { title = "Diagram.nvim" })
+      goto continue
+    end
 
     local renderer_options = state.renderer_options[renderer.id] or {}
     local renderer_result = renderer.render(diagram.source, renderer_options)
+    
+    -- Skip rendering if the renderer returned nil (e.g., executable not found)
+    if not renderer_result then
+      goto continue
+    end
 
     local function render_image()
       if vim.fn.filereadable(renderer_result.file_path) == 0 then return end
 
       local diagram_col = diagram.range.start_col
       local diagram_row = diagram.range.start_row
-      if vim.bo[bufnr].filetype == "norg" then
-        diagram_row = diagram_row - 1
-      end
+      if vim.bo[bufnr].filetype == "norg" then diagram_row = diagram_row - 1 end
 
       local image = image_nvim.from_file(renderer_result.file_path, {
         buffer = bufnr,
@@ -76,7 +91,7 @@ local render_buffer = function(bufnr, winnr, integration)
         inline = true,
         x = diagram_col,
         y = diagram_row,
-        render_offset_top = 2,
+        render_offset_top = 1,
       })
       diagram.image = image
 
@@ -88,28 +103,35 @@ local render_buffer = function(bufnr, winnr, integration)
       -- Use a timer to poll the job's completion status every 100ms.
       local timer = vim.loop.new_timer()
       if not timer then return end
-      timer:start(0, 100, vim.schedule_wrap(function()
-        local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
-        if result[1] ~= -1 then
-          if timer:is_active() then
-            timer:stop()
+      timer:start(
+        0,
+        100,
+        vim.schedule_wrap(function()
+          local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
+          if result[1] ~= -1 then
+            if timer:is_active() then timer:stop() end
+            if not timer:is_closing() then
+              timer:close()
+              render_image()
+            end
           end
-          if not timer:is_closing() then
-            timer:close()
-            render_image()
-          end
-        end
-      end))
+        end)
+      )
     else
       render_image()
     end
+    
+    ::continue::
   end
 end
 
 ---@param opts PluginOptions
 local setup = function(opts)
   local ok = pcall(require, "image")
-  if not ok then error("diagram: missing dependency `3rd/image.nvim`") end
+  if not ok then 
+    vim.notify("Missing dependency: 3rd/image.nvim\nPlease install image.nvim to use diagram.nvim", vim.log.levels.ERROR, { title = "Diagram.nvim" })
+    return
+  end
 
   state.integrations = opts.integrations or state.integrations
   state.events = vim.tbl_deep_extend("force", state.events, opts.events or {})
@@ -121,10 +143,8 @@ local setup = function(opts)
 
   local setup_buffer = function(bufnr, integration)
     -- render (only if events are configured)
-    if not state.events.render_buffer or #state.events.render_buffer == 0 then
-      return
-    end
-    
+    if not state.events.render_buffer or #state.events.render_buffer == 0 then return end
+
     vim.api.nvim_create_autocmd(state.events.render_buffer, {
       buffer = bufnr,
       callback = function(buf_ev)
@@ -154,9 +174,11 @@ local setup = function(opts)
     })
 
     -- first render (only if render events are enabled)
-    if vim.tbl_contains(integration.filetypes, current_ft) and 
-       state.events.render_buffer and 
-       #state.events.render_buffer > 0 then
+    if
+      vim.tbl_contains(integration.filetypes, current_ft)
+      and state.events.render_buffer
+      and #state.events.render_buffer > 0
+    then
       setup_buffer(current_bufnr, integration)
       render_buffer(current_bufnr, current_winnr, integration)
     elseif vim.tbl_contains(integration.filetypes, current_ft) then
