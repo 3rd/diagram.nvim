@@ -196,8 +196,26 @@ local show_diagram_hover = function()
   hover.hover_at_cursor(state.integrations, state.renderer_options)
 end
 
+local render = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local winnr = vim.api.nvim_get_current_win()
+  local ft = vim.bo[bufnr].filetype
+  for _, integration in ipairs(state.integrations) do
+    if vim.tbl_contains(integration.filetypes, ft) then
+      render_buffer(bufnr, winnr, integration)
+      return
+    end
+  end
+end
+
+local clear = function()
+  clear_buffer(vim.api.nvim_get_current_buf())
+end
+
 return {
   setup = setup,
   get_cache_dir = get_cache_dir,
   show_diagram_hover = show_diagram_hover,
+  render = render,
+  clear = clear,
 }
