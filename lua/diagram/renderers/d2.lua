@@ -4,6 +4,7 @@
 ---@field scale? number
 ---@field layout? string
 ---@field sketch? boolean
+---@field format? string @Either "svg" or "png"
 ---@field cli_args? string[]
 
 ---@type table<string, string>
@@ -23,7 +24,10 @@ vim.fn.mkdir(cache_dir, "p")
 M.render = function(source, options)
   local hash = vim.fn.sha256(M.id .. ":" .. source)
 
-  local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
+  if options.format == nil then
+      options.format = "png"
+  end
+  local path = vim.fn.resolve(cache_dir .. "/" .. hash .. options.format)
   if vim.fn.filereadable(path) == 1 then return { file_path = path } end
 
   if not vim.fn.executable("d2") then
@@ -70,6 +74,9 @@ M.render = function(source, options)
     on_stdout = function(job_id, data, event) end,
     on_stderr = function(job_id, data, event)
       local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+      if vim.startswith(error_msg, "success: successfully compiled") then
+          return
+      end
       if error_msg ~= "" then
         vim.notify("Failed to render D2 diagram:\n" .. error_msg, vim.log.levels.ERROR, { title = "Diagram.nvim" })
       end
