@@ -134,7 +134,11 @@ local setup = function(opts)
   end
 
   state.integrations = opts.integrations or state.integrations
-  state.events = vim.tbl_deep_extend("force", state.events, opts.events or {})
+  if opts.events then
+    for k, v in pairs(opts.events) do
+      state.events[k] = v
+    end
+  end
   state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
 
   local current_bufnr = vim.api.nvim_get_current_buf()
@@ -154,7 +158,7 @@ local setup = function(opts)
     })
 
     -- clear
-    if state.events.clear_buffer then
+    if state.events.clear_buffer and #state.events.clear_buffer > 0 then
       vim.api.nvim_create_autocmd(state.events.clear_buffer, {
         buffer = bufnr,
         callback = function()
