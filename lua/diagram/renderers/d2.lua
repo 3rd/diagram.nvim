@@ -28,7 +28,7 @@ M.render = function(source, options, on_finish)
 	if options.format == nil then
 		options.format = "png"
 	end
-	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. options.format)
+	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. "." .. options.format)
 	if vim.fn.filereadable(path) == 1 then
 		return { file_path = path }
 	end
