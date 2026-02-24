@@ -25,4 +25,5 @@
 ---@field range { start_row: number, start_col: number, end_row: number, end_col: number }
 ---@field renderer_id string
 ---@field source string
+---@field options table<string, any>|nil
 ---@field image Image|nil

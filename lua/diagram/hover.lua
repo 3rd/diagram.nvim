@@ -110,8 +110,10 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
   end
 
   -- Render the diagram
-  local options = renderer_options[renderer.id] or {}
-  local renderer_result = renderer.render(diagram.source, options)
+  -- Merge global options with per-diagram options (per-diagram takes precedence)
+  local global_options = renderer_options[renderer.id] or {}
+  local merged_options = vim.tbl_deep_extend("force", global_options, diagram.options or {})
+  local renderer_result = renderer.render(diagram.source, merged_options)
 
   local function show_in_tab()
     if vim.fn.filereadable(renderer_result.file_path) == 0 then
