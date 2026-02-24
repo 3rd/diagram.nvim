@@ -14,10 +14,10 @@ Renderers take source code as input and render it to an image, often by calling 
 \
 Integrations read buffers, extract diagram code, and dispatch work to the renderers.
 
-| Integration | Supported renderers                          |
-| ----------- | ------------------------------------------- |
-| `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
-| `neorg`     | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
+| Integration | Supported renderers                    |
+| ----------- | -------------------------------------- |
+| `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot` |
+| `neorg`     | `mermaid`, `plantuml`, `d2`, `gnuplot` |
 
 | Renderer   | Requirements                                      |
 | ---------- | ------------------------------------------------- |
@@ -68,7 +68,16 @@ With **lazy.nvim**:
         theme = nil, -- nil | "light" | "dark" | custom theme string
         cli_args = nil, -- nil | { "-p" } | { "-c", "config.plt" } | ...
       },
-    }
+    },
+    popup_options = {
+      enabled = false,        -- Enable popup preview (default: false)
+      auto_close = true,      -- Auto-close on cursor move (default: true)
+      auto_show = false,      -- Auto-show popup when cursor moves over diagram (default: false)
+      delay = 300,            -- Delay in ms before showing popup (default: 300)
+      width = nil,            -- Custom width (nil = auto)
+      height = nil,           -- Custom height (nil = auto)
+      border = "rounded",     -- Border style: "none", "single", "double", "rounded", "solid", "shadow"
+    },
   },
 },
 ```
@@ -80,6 +89,7 @@ You can pass custom command-line arguments to any renderer using the `cli_args` 
 **Common Use Cases:**
 
 1. **Fixing mmdc sandboxing issues (Nix/AppImage):**
+
    ```lua
    renderer_options = {
      mermaid = {
@@ -133,7 +143,8 @@ The plugin exposes the following API functions:
 
 - `setup(opts)`: Sets up the plugin with the given options.
 - `get_cache_dir()`: Returns the root cache directory.
-- `show_diagram_hover()`: Shows the diagram at cursor in a new tab (for manual keybinding).
+- `show_diagram_hover()`: Shows the diagram at cursor (popup or new tab based on configuration).
+- `close_popup()`: Manually closes any open popup window.
 
 ### Diagram Hover Feature
 
@@ -175,15 +186,17 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
 ```
 
 **Key Configuration Details:**
+
 - `"K"` - The key to press (can be changed to any key like `"<leader>d"`, `"gd"`, etc.)
 - `ft = { "markdown", "norg" }` - Only activates in markdown and neorg files
 - The function calls `require("diagram").show_diagram_hover()` to display the diagram
 
 **Features:**
+
 - **Cursor detection**: Works when cursor is anywhere inside diagram code blocks
-- **New tab display**: Opens diagram in a dedicated tab with proper image rendering
+- **Multiple display modes**: Supports both popup windows and new tabs
 - **Multiple diagram types**: Supports mermaid, plantuml, d2, and gnuplot
 - **Easy navigation**:
-  - `q` or `Esc` to close the diagram tab
+  - `q` or `Esc` to close the diagram
   - `o` to open the image with system viewer (Preview, etc.)
 - **Async rendering**: Handles both cached and newly-rendered diagrams
