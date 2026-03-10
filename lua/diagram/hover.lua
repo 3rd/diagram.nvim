@@ -133,14 +133,22 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
     vim.bo[buf].bufhidden = "wipe"
     vim.bo[buf].swapfile = false
 
-    -- Add header content
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    -- Add header content with enough padding lines for image.nvim's
+    -- screenpos() call, which errors with E966 if the buffer has fewer
+    -- lines than the image's y-offset.
+    local header = {
       "# " .. diagram.renderer_id:upper() .. " Diagram",
       "",
       "Press 'q' to close this tab",
       "Press 'o' to open image with system viewer",
       "",
-    })
+    }
+    local win_height = vim.api.nvim_win_get_height(win)
+    local padding = win_height - #header
+    for _ = 1, math.max(0, padding) do
+      table.insert(header, "")
+    end
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, header)
 
     -- Try to render the image
     local image = image_nvim.from_file(renderer_result.file_path, {
