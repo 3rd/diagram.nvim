@@ -18,6 +18,7 @@ Integrations read buffers, extract diagram code, and dispatch work to the render
 | ----------- | ------------------------------------------- |
 | `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 | `neorg`     | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
+| `vimwiki`   | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 
 | Renderer   | Requirements                                      |
 | ---------- | ------------------------------------------------- |
@@ -108,6 +109,7 @@ require("diagram").setup({
   integrations = {
     require("diagram.integrations.markdown"),
     require("diagram.integrations.neorg"),
+    require("diagram.integrations.vimwiki"),
   },
   renderer_options = {
     mermaid = {
@@ -167,7 +169,7 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
         require("diagram").show_diagram_hover()
       end,
       mode = "n",
-      ft = { "markdown", "norg" }, -- Only in these filetypes
+      ft = { "markdown", "norg", "vimwiki" }, -- Only in these filetypes
       desc = "Show diagram in new tab",
     },
   },
@@ -176,7 +178,7 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
 
 **Key Configuration Details:**
 - `"K"` - The key to press (can be changed to any key like `"<leader>d"`, `"gd"`, etc.)
-- `ft = { "markdown", "norg" }` - Only activates in markdown and neorg files
+- `ft = { "markdown", "norg", "vimwiki" }` - Only activates in markdown, neorg, and vimwiki files
 - The function calls `require("diagram").show_diagram_hover()` to display the diagram
 
 **Features:**
