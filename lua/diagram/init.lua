@@ -71,7 +71,7 @@ local render_buffer = function(bufnr, winnr, integration)
 
     local renderer_options = state.renderer_options[renderer.id] or {}
     local renderer_result = renderer.render(diagram.source, renderer_options)
-    
+
     -- Skip rendering if the renderer returned nil (e.g., executable not found)
     if not renderer_result then
       goto continue
@@ -120,7 +120,7 @@ local render_buffer = function(bufnr, winnr, integration)
     else
       render_image()
     end
-    
+
     ::continue::
   end
 end
@@ -128,7 +128,7 @@ end
 ---@param opts PluginOptions
 local setup = function(opts)
   local ok = pcall(require, "image")
-  if not ok then 
+  if not ok then
     vim.notify("Missing dependency: 3rd/image.nvim\nPlease install image.nvim to use diagram.nvim", vim.log.levels.ERROR, { title = "Diagram.nvim" })
     return
   end
@@ -200,6 +200,11 @@ local show_diagram_hover = function()
   hover.hover_at_cursor(state.integrations, state.renderer_options)
 end
 
+-- Public API: render diagram at cursor and open PNG with OS default app (vim.ui.open). See hover.lua.
+local open_diagram_externally = function()
+  hover.open_diagram_externally_at_cursor(state.integrations, state.renderer_options)
+end
+
 local render = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local winnr = vim.api.nvim_get_current_win()
@@ -220,6 +225,7 @@ return {
   setup = setup,
   get_cache_dir = get_cache_dir,
   show_diagram_hover = show_diagram_hover,
+  open_diagram_externally = open_diagram_externally,
   render = render,
   clear = clear,
 }
