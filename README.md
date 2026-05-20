@@ -16,6 +16,7 @@ Integrations read buffers, extract diagram code, and dispatch work to the render
 
 | Integration | Supported renderers                          |
 | ----------- | ------------------------------------------- |
+| `asciidoc`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 | `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 | `neorg`     | `mermaid`, `plantuml`, `d2`, `gnuplot`      |
 
@@ -73,6 +74,45 @@ With **lazy.nvim**:
 },
 ```
 
+If you want AsciiDoc support, install the parser from
+[`cathaysia/tree-sitter-asciidoc`](https://github.com/cathaysia/tree-sitter-asciidoc):
+
+```lua
+local parsers = require("nvim-treesitter.parsers")
+
+parsers.asciidoc = {
+  install_info = {
+    url = "https://github.com/cathaysia/tree-sitter-asciidoc",
+    files = { "tree-sitter-asciidoc/src/parser.c", "tree-sitter-asciidoc/src/scanner.c" },
+    branch = "master",
+    location = "tree-sitter-asciidoc",
+    queries = "queries/asciidoc",
+    requires = { "asciidoc_inline" },
+  },
+}
+
+parsers.asciidoc_inline = {
+  install_info = {
+    url = "https://github.com/cathaysia/tree-sitter-asciidoc",
+    files = { "tree-sitter-asciidoc_inline/src/parser.c" },
+    branch = "master",
+    location = "tree-sitter-asciidoc_inline",
+    queries = "queries/asciidoc_inline",
+  },
+}
+
+```
+
+Then AsciiDoc diagram blocks like this are supported:
+
+```adoc
+[source,mermaid]
+----
+graph TD
+A-->B
+----
+```
+
 ### Custom CLI Arguments
 
 You can pass custom command-line arguments to any renderer using the `cli_args` option.
@@ -106,6 +146,7 @@ To use the plugin, you need to set up the integrations and renderers in your Neo
 ```lua
 require("diagram").setup({
   integrations = {
+    require("diagram.integrations.asciidoc"),
     require("diagram.integrations.markdown"),
     require("diagram.integrations.neorg"),
   },
@@ -167,7 +208,7 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
         require("diagram").show_diagram_hover()
       end,
       mode = "n",
-      ft = { "markdown", "norg" }, -- Only in these filetypes
+      ft = { "asciidoc", "adoc", "markdown", "norg" }, -- Only in these filetypes
       desc = "Show diagram in new tab",
     },
   },
@@ -176,7 +217,7 @@ You can add a keymap to view diagrams in a dedicated tab. Place your cursor insi
 
 **Key Configuration Details:**
 - `"K"` - The key to press (can be changed to any key like `"<leader>d"`, `"gd"`, etc.)
-- `ft = { "markdown", "norg" }` - Only activates in markdown and neorg files
+- `ft = { "asciidoc", "adoc", "markdown", "norg" }` - Only activates in supported document filetypes
 - The function calls `require("diagram").show_diagram_hover()` to display the diagram
 
 **Features:**

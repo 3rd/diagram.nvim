@@ -37,6 +37,7 @@ local state = {
     },
   },
   integrations = {
+    integrations.asciidoc,
     integrations.markdown,
     integrations.neorg,
   },
