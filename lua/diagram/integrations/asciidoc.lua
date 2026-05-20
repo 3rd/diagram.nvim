@@ -35,34 +35,38 @@ local M = {
 
 M.query_buffer_diagrams = function(bufnr)
   if not query then
-    query = ts_query.parse(
-      "asciidoc",
-      [[
-      (section_block
-        (element_attr
-          (element_attr_marker)
-          (attr_value) @attr
-          (element_attr_marker))
-        (listing_block
-          (listing_block_start_marker) @start
-          (listing_block_body) @code
-          (listing_block_end_marker) @end)) @diagram
+    local ok = pcall(function()
+      query = ts_query.parse(
+        "asciidoc",
+        [[
+        (section_block
+          (element_attr
+            (element_attr_marker)
+            (attr_value) @attr
+            (element_attr_marker))
+          (listing_block
+            (listing_block_start_marker) @start
+            (listing_block_body) @code
+            (listing_block_end_marker) @end)) @diagram
 
-      (section_block
-        (element_attr
-          (element_attr_marker)
-          (attr_value) @attr
-          (element_attr_marker))
-        (literal_block
-          (literal_block_marker) @start
-          (literal_block_body) @code
-          (literal_block_marker) @end)) @diagram
-      ]]
-    )
+        (section_block
+          (element_attr
+            (element_attr_marker)
+            (attr_value) @attr
+            (element_attr_marker))
+          (literal_block
+            (literal_block_marker) @start
+            (literal_block_body) @code
+            (literal_block_marker) @end)) @diagram
+        ]]
+      )
+    end)
+    if not ok then return {} end
   end
 
   local buf = bufnr or vim.api.nvim_get_current_buf()
-  local parser = vim.treesitter.get_parser(buf, "asciidoc")
+  local ok, parser = pcall(vim.treesitter.get_parser, buf, "asciidoc")
+  if not ok then return {} end
   local root = parser:parse(true)[1]:root()
 
   ---@type Diagram[]
