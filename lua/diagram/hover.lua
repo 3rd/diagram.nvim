@@ -20,6 +20,12 @@ local get_extended_range = function(bufnr, diagram)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local start_row = diagram.range.start_row
   local end_row = diagram.range.end_row
+  local filetype = vim.bo[bufnr].filetype
+
+  if (filetype == "asciidoc" or filetype == "adoc") and start_row > 0 then
+    local previous_line = lines[start_row]
+    if previous_line and previous_line:match("^%s*%[.*%]%s*$") then start_row = start_row - 1 end
+  end
 
   -- Look backwards from start_row to find the opening ```
   for i = start_row, 0, -1 do
