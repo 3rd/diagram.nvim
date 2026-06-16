@@ -36,6 +36,15 @@ local state = {
       cli_args = nil,
     },
   },
+  popup_options = {
+    enabled = false,        -- Enable popup preview
+    auto_close = true,      -- Auto-close on cursor move
+    auto_show = false,      -- Auto-show popup when cursor moves over diagram
+    delay = 300,            -- Delay in ms before showing popup (for auto_show)
+    width = nil,            -- Custom width (nil = auto)
+    height = nil,           -- Custom height (nil = auto)
+    border = "rounded",     -- Border style: "none", "single", "double", "rounded", "solid", "shadow"
+  },
   integrations = {
     integrations.markdown,
     integrations.neorg,
@@ -128,7 +137,7 @@ end
 ---@param opts PluginOptions
 local setup = function(opts)
   local ok = pcall(require, "image")
-  if not ok then 
+  if not ok then
     vim.notify("Missing dependency: 3rd/image.nvim\nPlease install image.nvim to use diagram.nvim", vim.log.levels.ERROR, { title = "Diagram.nvim" })
     return
   end
@@ -140,10 +149,15 @@ local setup = function(opts)
     end
   end
   state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
+  state.popup_options = vim.tbl_deep_extend("force", state.popup_options, opts.popup_options or {})
 
   local current_bufnr = vim.api.nvim_get_current_buf()
   local current_winnr = vim.api.nvim_get_current_win()
   local current_ft = vim.bo[current_bufnr].filetype
+
+  -- Track popup auto-show state
+  local popup_timer = nil
+  local last_diagram = nil
 
   local setup_buffer = function(bufnr, integration)
     -- render (only if events are configured)
@@ -163,6 +177,64 @@ local setup = function(opts)
         buffer = bufnr,
         callback = function()
           clear_buffer(bufnr)
+        end,
+      })
+    end
+
+    -- Setup auto-show popup on cursor move
+    if state.popup_options.enabled and state.popup_options.auto_show then
+      vim.api.nvim_create_autocmd("CursorMoved", {
+        buffer = bufnr,
+        callback = function()
+          -- Cancel previous timer
+          if popup_timer then
+            popup_timer:stop()
+            popup_timer:close()
+            popup_timer = nil
+          end
+
+          -- Check if cursor is over a diagram
+          local diagram = require("diagram.hover").get_diagram_at_cursor(bufnr, state.integrations)
+
+          if diagram then
+            -- If we moved to a different diagram, close the current popup
+            if last_diagram and (
+              last_diagram.range.start_row ~= diagram.range.start_row or
+              last_diagram.range.start_col ~= diagram.range.start_col
+            ) then
+              require("diagram.hover").close_popup()
+            end
+
+            last_diagram = diagram
+
+            -- Show popup after delay
+            popup_timer = vim.loop.new_timer()
+            if popup_timer then
+              popup_timer:start(
+                state.popup_options.delay or 300,
+                0,
+                vim.schedule_wrap(function()
+                  popup_timer:close()
+                  popup_timer = nil
+
+                  -- Check if we're still over the same diagram
+                  local current_diagram = require("diagram.hover").get_diagram_at_cursor(bufnr, state.integrations)
+                  if current_diagram and last_diagram and (
+                    current_diagram.range.start_row == last_diagram.range.start_row and
+                    current_diagram.range.start_col == last_diagram.range.start_col
+                  ) then
+                    require("diagram.hover").show_diagram_hover(current_diagram, state.integrations, state.renderer_options, state.popup_options)
+                  end
+                end)
+              )
+            end
+          else
+            -- Not over a diagram, close popup if auto_close is enabled
+            if state.popup_options.auto_close then
+              require("diagram.hover").close_popup()
+            end
+            last_diagram = nil
+          end
         end,
       })
     end
@@ -197,7 +269,7 @@ local get_cache_dir = function()
 end
 
 local show_diagram_hover = function()
-  hover.hover_at_cursor(state.integrations, state.renderer_options)
+  hover.hover_at_cursor(state.integrations, state.renderer_options, state.popup_options)
 end
 
 local render = function()
@@ -220,6 +292,7 @@ return {
   setup = setup,
   get_cache_dir = get_cache_dir,
   show_diagram_hover = show_diagram_hover,
+  close_popup = hover.close_popup,
   render = render,
   clear = clear,
 }
