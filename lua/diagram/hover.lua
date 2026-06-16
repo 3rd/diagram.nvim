@@ -53,7 +53,6 @@ end
 local get_diagram_at_cursor = function(bufnr, integrations)
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row = cursor[1] - 1 -- 0-indexed
-  local col = cursor[2]
 
   -- Find matching integration for current filetype
   local ft = vim.bo[bufnr].filetype
@@ -76,6 +75,84 @@ local get_diagram_at_cursor = function(bufnr, integrations)
   end
 
   return nil
+end
+
+--- Render diagram at cursor and open the image with the OS default app (|vim.ui.open()|).
+--- New entry point: same render path as hover, but skips the tab/image.nvim preview.
+---@param integrations Integration[]
+---@param renderer_options table<string, any>
+M.open_diagram_externally_at_cursor = function(integrations, renderer_options)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local diagram = get_diagram_at_cursor(bufnr, integrations)
+	if not diagram then
+		vim.notify("No diagram found at cursor", vim.log.levels.INFO)
+		return
+	end
+
+	local ft = vim.bo[bufnr].filetype
+	local integration = nil
+	for _, integ in ipairs(integrations) do
+		if vim.tbl_contains(integ.filetypes, ft) then
+			integration = integ
+			break
+		end
+	end
+	if not integration then
+		return
+	end
+
+	local renderer = nil
+	for _, r in ipairs(integration.renderers) do
+		if r.id == diagram.renderer_id then
+			renderer = r
+			break
+		end
+	end
+	if not renderer then
+		vim.notify("No renderer found for " .. diagram.renderer_id, vim.log.levels.ERROR)
+		return
+	end
+
+	local options = renderer_options[renderer.id] or {}
+	local renderer_result = renderer.render(diagram.source, options)
+	-- Abort if render failed (e.g. mmdc not installed); same idea as render_buffer in init.lua.
+	if not renderer_result then
+		return
+	end
+
+	local function open_file()
+		if vim.fn.filereadable(renderer_result.file_path) == 0 then
+			vim.notify("Diagram file not found: " .. renderer_result.file_path, vim.log.levels.ERROR)
+			return
+		end
+		vim.ui.open(renderer_result.file_path)
+	end
+
+	-- Async render (e.g. mermaid): poll until job finishes, then open (same pattern as show_diagram_hover).
+	if renderer_result.job_id then
+		local timer = vim.loop.new_timer()
+		if not timer then
+			return
+		end
+		timer:start(
+			0,
+			100,
+			vim.schedule_wrap(function()
+				local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
+				if result[1] ~= -1 then
+					if timer:is_active() then
+						timer:stop()
+					end
+					if not timer:is_closing() then
+						timer:close()
+					end
+					open_file()
+				end
+			end)
+		)
+	else
+		open_file()
+	end
 end
 
 ---@param diagram Diagram
@@ -139,6 +216,7 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
       "",
       "Press 'q' to close this tab",
       "Press 'o' to open image with system viewer",
+      "",
       "",
     })
 
