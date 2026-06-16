@@ -8,6 +8,8 @@ local state = {
     render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
     clear_buffer = { "BufLeave" },
   },
+  render_offset_top = 1,
+  overlap = false,
   renderer_options = {
     mermaid = {
       background = nil,
@@ -84,15 +86,28 @@ local render_buffer = function(bufnr, winnr, integration)
       local diagram_row = diagram.range.start_row
       if vim.bo[bufnr].filetype == "norg" then diagram_row = diagram_row - 1 end
 
-      local image = image_nvim.from_file(renderer_result.file_path, {
+      local image_opts = {
         buffer = bufnr,
         window = winnr,
         with_virtual_padding = true,
         inline = true,
         x = diagram_col,
         y = diagram_row,
-        render_offset_top = 1,
-      })
+        render_offset_top = state.render_offset_top,
+      }
+
+      if state.overlap then
+        -- Count code block lines (fence + content + closing fence)
+        local block_lines = 1
+        local remaining = vim.api.nvim_buf_get_lines(bufnr, diagram_row + 1, -1, false)
+        for _, l in ipairs(remaining) do
+          block_lines = block_lines + 1
+          if l:match('^```') then break end
+        end
+        image_opts.overlap = block_lines
+      end
+
+      local image = image_nvim.from_file(renderer_result.file_path, image_opts)
       diagram.image = image
 
       table.insert(state.diagrams, diagram)
@@ -139,6 +154,8 @@ local setup = function(opts)
       state.events[k] = v
     end
   end
+  if opts.render_offset_top ~= nil then state.render_offset_top = opts.render_offset_top end
+  if opts.overlap ~= nil then state.overlap = opts.overlap end
   state.renderer_options = vim.tbl_deep_extend("force", state.renderer_options, opts.renderer_options or {})
 
   local current_bufnr = vim.api.nvim_get_current_buf()
