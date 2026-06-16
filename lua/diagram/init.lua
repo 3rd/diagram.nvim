@@ -69,8 +69,10 @@ local render_buffer = function(bufnr, winnr, integration)
       goto continue
     end
 
-    local renderer_options = state.renderer_options[renderer.id] or {}
-    local renderer_result = renderer.render(diagram.source, renderer_options)
+    -- Merge global options with per-diagram options (per-diagram takes precedence)
+    local global_options = state.renderer_options[renderer.id] or {}
+    local merged_options = vim.tbl_deep_extend("force", global_options, diagram.options or {})
+    local renderer_result = renderer.render(diagram.source, merged_options)
     
     -- Skip rendering if the renderer returned nil (e.g., executable not found)
     if not renderer_result then

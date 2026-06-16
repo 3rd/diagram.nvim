@@ -17,7 +17,9 @@ vim.fn.mkdir(cache_dir, "p")
 ---@param options PlantUMLOptions
 ---@return table|nil
 M.render = function(source, options)
-  local hash = vim.fn.sha256(M.id .. ":" .. source)
+  -- Include options in cache key for proper cache invalidation
+  local options_json = vim.fn.json_encode(options)
+  local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. options_json)
 
   local path = vim.fn.resolve(cache_dir .. "/" .. hash .. ".png")
   if vim.fn.filereadable(path) == 1 then return { file_path = path } end
@@ -34,8 +36,10 @@ M.render = function(source, options)
     "plantuml",
   }
 
-  -- Add custom CLI arguments if provided
-  if options.cli_args and #options.cli_args > 0 then vim.list_extend(command_parts, options.cli_args) end
+  -- Add custom CLI arguments if provided (with type validation)
+  if options.cli_args and type(options.cli_args) == "table" and #options.cli_args > 0 then 
+    vim.list_extend(command_parts, options.cli_args) 
+  end
 
   -- Add standard arguments
   vim.list_extend(command_parts, {
@@ -59,7 +63,7 @@ M.render = function(source, options)
       on_stderr = function(job_id, data, event)
         local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
         if error_msg ~= "" then
-          vim.notify("Failed to render PlantUML diagram:\n" .. error_msg, vim.log.levels.ERROR, { title = "Diagram.nvim" })
+          vim.notify("Error rendering PlantUML diagram:\n" .. error_msg, vim.log.levels.ERROR, { title = "Diagram.nvim" })
         end
       end,
       on_exit = function(job_id, exit_code, event)
