@@ -68,9 +68,7 @@ M.render = function(source, options)
     table.insert(command_parts, options.height)
   end
 
-  local command = table.concat(command_parts, " ")
-
-  local job_id = vim.fn.jobstart(command, {
+  local job_id = vim.fn.jobstart(command_parts, {
     on_stdout = function(job_id, data, event) end,
     on_stderr = function(job_id, data, event)
       local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
