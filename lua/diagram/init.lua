@@ -39,6 +39,7 @@ local state = {
   integrations = {
     integrations.markdown,
     integrations.neorg,
+    integrations.vimwiki,
   },
   diagrams = {},
 }
