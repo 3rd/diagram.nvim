@@ -217,6 +217,7 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
 			"Press 'q' to close this tab",
 			"Press 'o' to open image with system viewer",
 			"",
+			"",
 		})
 
 		local image = display_image(renderer_result.file_path, buf, win, 6)
@@ -239,17 +240,6 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
 		vim.keymap.set("n", "o", function()
 			vim.ui.open(renderer_result.file_path)
 		end, { buffer = buf, desc = "Open image with system viewer" })
-
-		vim.api.nvim_create_autocmd({ "WinScrolled", "VimResized" }, {
-			buffer = buf,
-			callback = function()
-				if image then
-					vim.schedule(function()
-						image:render()
-					end)
-				end
-			end,
-		})
 
 		vim.api.nvim_create_autocmd("BufWipeout", {
 			buffer = buf,
