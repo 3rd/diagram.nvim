@@ -1,5 +1,4 @@
 local hover = require("diagram/hover")
-local image_nvim = require("image")
 local integrations = require("diagram/integrations")
 
 ---@class State
@@ -51,6 +50,28 @@ local clear_buffer = function(bufnr)
 	end
 end
 
+local function create_inline_image(file_path, bufnr, winnr, col, row)
+	local ok, image_nvim = pcall(require, "image")
+	if not ok then
+		vim.notify(
+			"Inline diagram rendering requires 3rd/image.nvim",
+			vim.log.levels.ERROR,
+			{ title = "Diagram.nvim" }
+		)
+		return nil
+	end
+
+	return image_nvim.from_file(file_path, {
+		buffer = bufnr,
+		window = winnr,
+		with_virtual_padding = true,
+		inline = true,
+		x = col,
+		y = row,
+		render_offset_top = 1,
+	})
+end
+
 ---@param bufnr number
 ---@param winnr number
 ---@param integration Integration
@@ -89,17 +110,12 @@ local render_buffer = function(bufnr, winnr, integration)
 				diagram_row = diagram_row - 1
 			end
 
-			local image = image_nvim.from_file(renderer_result.file_path, {
-				buffer = bufnr,
-				window = winnr,
-				with_virtual_padding = true,
-				inline = true,
-				x = diagram_col,
-				y = diagram_row,
-				render_offset_top = 1,
-			})
-			diagram.image = image
+			local image = create_inline_image(renderer_result.file_path, bufnr, winnr, diagram_col, diagram_row)
+			if not image then
+				return
+			end
 
+			diagram.image = image
 			table.insert(state.diagrams, diagram)
 			image:render()
 		end
@@ -123,16 +139,6 @@ end
 
 ---@param opts PluginOptions
 local setup = function(opts)
-	local ok = pcall(require, "image")
-	if not ok then
-		vim.notify(
-			"Missing dependency: 3rd/image.nvim\nPlease install image.nvim to use diagram.nvim",
-			vim.log.levels.ERROR,
-			{ title = "Diagram.nvim" }
-		)
-		return
-	end
-
 	state.integrations = opts.integrations or state.integrations
 	if opts.events then
 		for k, v in pairs(opts.events) do
