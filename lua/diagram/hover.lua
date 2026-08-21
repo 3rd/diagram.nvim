@@ -19,11 +19,24 @@ local function native_image(file_path, win, line)
 	end
 
 	local ok, data = pcall(vim.fn.readblob, file_path)
-	if not ok then
+	if not ok or not vim.api.nvim_win_is_valid(win) then
 		return nil
 	end
 
-	local id
+	local position = vim.fn.screenpos(win, line, 1)
+	if position.row == 0 or position.col == 0 then
+		return nil
+	end
+
+	local created, id = pcall(vim.ui.img.set, data, {
+		row = position.row,
+		col = position.col,
+		zindex = 50,
+	})
+	if not created then
+		return nil
+	end
+
 	local image = {}
 
 	function image:render()
@@ -31,29 +44,20 @@ local function native_image(file_path, win, line)
 			return
 		end
 
-		local position = vim.fn.screenpos(win, line, 1)
-		if position.row == 0 or position.col == 0 then
+		local next_position = vim.fn.screenpos(win, line, 1)
+		if next_position.row == 0 or next_position.col == 0 then
 			return
 		end
 
-		if id then
-			vim.ui.img.set(id, {
-				row = position.row,
-				col = position.col,
-			})
-			return
-		end
-
-		id = vim.ui.img.set(data, {
-			row = position.row,
-			col = position.col,
-			zindex = 50,
+		pcall(vim.ui.img.set, id, {
+			row = next_position.row,
+			col = next_position.col,
 		})
 	end
 
 	function image:clear()
 		if id then
-			vim.ui.img.del(id)
+			pcall(vim.ui.img.del, id)
 			id = nil
 		end
 	end
