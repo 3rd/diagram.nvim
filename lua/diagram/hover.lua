@@ -1,5 +1,3 @@
-local image_nvim = require("image")
-
 local M = {}
 
 local function show_loading_notification(diagram_type)
@@ -13,6 +11,80 @@ local function show_ready_notification()
 		replace = true,
 		timeout = 1500,
 	})
+end
+
+local function native_image(file_path, win, line)
+	if not vim.ui.img or not vim.ui.img.set then
+		return nil
+	end
+
+	local ok, data = pcall(vim.fn.readblob, file_path)
+	if not ok then
+		return nil
+	end
+
+	local id
+	local image = {}
+
+	function image:render()
+		if not vim.api.nvim_win_is_valid(win) then
+			return
+		end
+
+		local position = vim.fn.screenpos(win, line, 1)
+		if position.row == 0 or position.col == 0 then
+			return
+		end
+
+		if id then
+			vim.ui.img.set(id, {
+				row = position.row,
+				col = position.col,
+			})
+			return
+		end
+
+		id = vim.ui.img.set(data, {
+			row = position.row,
+			col = position.col,
+			zindex = 50,
+		})
+	end
+
+	function image:clear()
+		if id then
+			vim.ui.img.del(id)
+			id = nil
+		end
+	end
+
+	return image
+end
+
+local function fallback_image(file_path, buf, win, line)
+	local ok, image_nvim = pcall(require, "image")
+	if not ok then
+		return nil
+	end
+
+	return image_nvim.from_file(file_path, {
+		buffer = buf,
+		window = win,
+		with_virtual_padding = true,
+		inline = true,
+		x = 0,
+		y = line - 1,
+	})
+end
+
+local function display_image(file_path, buf, win, line)
+	local image = native_image(file_path, win, line) or fallback_image(file_path, buf, win, line)
+
+	if image then
+		image:render()
+	end
+
+	return image
 end
 
 -- Helper function to calculate the full code block range from existing diagram data
@@ -128,21 +200,17 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
 			return
 		end
 
-		-- Show ready notification to replace loading message
 		show_ready_notification()
 
-		-- Create a new tab for better image.nvim support
 		vim.cmd("tabnew")
 		local buf = vim.api.nvim_get_current_buf()
 		local win = vim.api.nvim_get_current_win()
 
-		-- Set buffer options
 		vim.api.nvim_buf_set_name(buf, diagram.renderer_id .. " diagram")
 		vim.bo[buf].buftype = "nofile"
 		vim.bo[buf].bufhidden = "wipe"
 		vim.bo[buf].swapfile = false
 
-		-- Add header content
 		vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
 			"# " .. diagram.renderer_id:upper() .. " Diagram",
 			"",
@@ -151,43 +219,47 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
 			"",
 		})
 
-		-- Try to render the image
-		local image = image_nvim.from_file(renderer_result.file_path, {
-			buffer = buf,
-			window = win,
-			with_virtual_padding = true,
-			inline = true,
-			x = 0,
-			y = 5, -- Start after the header text
-		})
+		local image = display_image(renderer_result.file_path, buf, win, 6)
 
-		if image then
-			image:render()
-		else
-			-- Fallback if image.nvim fails
+		if not image then
 			vim.api.nvim_buf_set_lines(buf, -1, -1, false, {
 				"Image display failed. File: " .. renderer_result.file_path,
 			})
 		end
 
-		-- Keymaps for the diagram tab
-		vim.keymap.set("n", "q", function()
+		local function close()
 			if image then
 				image:clear()
 			end
 			vim.cmd("tabclose")
-		end, { buffer = buf, desc = "Close diagram tab" })
+		end
 
-		vim.keymap.set("n", "<Esc>", function()
-			if image then
-				image:clear()
-			end
-			vim.cmd("tabclose")
-		end, { buffer = buf, desc = "Close diagram tab" })
-
+		vim.keymap.set("n", "q", close, { buffer = buf, desc = "Close diagram tab" })
+		vim.keymap.set("n", "<Esc>", close, { buffer = buf, desc = "Close diagram tab" })
 		vim.keymap.set("n", "o", function()
 			vim.ui.open(renderer_result.file_path)
 		end, { buffer = buf, desc = "Open image with system viewer" })
+
+		vim.api.nvim_create_autocmd({ "WinScrolled", "VimResized" }, {
+			buffer = buf,
+			callback = function()
+				if image then
+					vim.schedule(function()
+						image:render()
+					end)
+				end
+			end,
+		})
+
+		vim.api.nvim_create_autocmd("BufWipeout", {
+			buffer = buf,
+			once = true,
+			callback = function()
+				if image then
+					image:clear()
+				end
+			end,
+		})
 	end
 
 	renderer_result = renderer.render(diagram.source, options, function()
