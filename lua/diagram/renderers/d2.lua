@@ -23,12 +23,10 @@ vim.fn.mkdir(cache_dir, "p")
 ---@param on_finish? function
 ---@return table|nil
 M.render = function(source, options, on_finish)
-	local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. vim.inspect(options))
-
-	if options.format == nil then
-		options.format = "png"
-	end
-	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. "." .. options.format)
+	local format = options.format or "png"
+	local normalized_options = vim.tbl_extend("force", {}, options, { format = format })
+	local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. vim.inspect(normalized_options))
+	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. "." .. format)
 	if vim.fn.filereadable(path) == 1 then
 		return { file_path = path }
 	end
