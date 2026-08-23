@@ -18,16 +18,25 @@ vim.fn.mkdir(tmpdir, "p")
 
 ---@param source string
 ---@param options GnuplotOptions
+---@param on_finish? function
 ---@return table|nil
-M.render = function(source, options)
-  local hash = vim.fn.sha256(M.id .. ":" .. source)
-  if cache[hash] then return cache[hash] end
+M.render = function(source, options, on_finish)
+  local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. vim.inspect(options))
+  if cache[hash] then
+    return { file_path = cache[hash] }
+  end
 
   local path = vim.fn.resolve(tmpdir .. "/" .. hash .. ".png")
-  if vim.fn.filereadable(path) == 1 then return { file_path = path } end
+  if vim.fn.filereadable(path) == 1 then
+    return { file_path = path }
+  end
 
   if not vim.fn.executable("gnuplot") then
-    vim.notify("gnuplot not found in PATH. Please install gnuplot to use gnuplot diagrams.", vim.log.levels.ERROR, { title = "Diagram.nvim" })
+    vim.notify(
+      "gnuplot not found in PATH. Please install gnuplot to use gnuplot diagrams.",
+      vim.log.levels.ERROR,
+      { title = "Diagram.nvim" }
+    )
     return nil
   end
 
@@ -38,9 +47,13 @@ M.render = function(source, options)
   table.insert(script, "set terminal pngcairo")
   table.insert(script, string.format("set output '%s'", path))
 
-  if options.size then table.insert(script, string.format("set size %s", options.size)) end
+  if options.size then
+    table.insert(script, string.format("set size %s", options.size))
+  end
 
-  if options.font then table.insert(script, string.format("set terminal pngcairo font '%s'", options.font)) end
+  if options.font then
+    table.insert(script, string.format("set terminal pngcairo font '%s'", options.font))
+  end
 
   -- Add theme settings
   if options.theme == "dark" then
@@ -75,7 +88,11 @@ M.render = function(source, options)
     -- treat as a custom theme
     table.insert(script, options.theme)
   elseif options.theme ~= nil then
-    vim.notify("Invalid gnuplot theme option. Must be 'light', 'dark', or a custom theme string.", vim.log.levels.ERROR, { title = "Diagram.nvim" })
+    vim.notify(
+      "Invalid gnuplot theme option. Must be 'light', 'dark', or a custom theme string.",
+      vim.log.levels.ERROR,
+      { title = "Diagram.nvim" }
+    )
     return nil
   end
 
@@ -89,24 +106,33 @@ M.render = function(source, options)
   local command_parts = { "gnuplot" }
 
   -- Add custom CLI arguments if provided
-  if options.cli_args and #options.cli_args > 0 then vim.list_extend(command_parts, options.cli_args) end
+  if options.cli_args and #options.cli_args > 0 then
+    vim.list_extend(command_parts, options.cli_args)
+  end
 
   -- Add the script file
   table.insert(command_parts, tmpsource)
 
-  local command = table.concat(command_parts, " ")
+  local command = command_parts
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(job_id, data, event) end,
     on_stderr = function(job_id, data, event)
       local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
       if error_msg ~= "" then
-        vim.notify("Failed to render gnuplot diagram:\n" .. error_msg, vim.log.levels.ERROR, { title = "Diagram.nvim" })
+        vim.notify(
+          "Failed to render gnuplot diagram:\n" .. error_msg,
+          vim.log.levels.ERROR,
+          { title = "Diagram.nvim" }
+        )
       end
     end,
     on_exit = function(job_id, exit_code, event)
       -- Clean up temporary script file
       vim.fn.delete(tmpsource)
       cache[hash] = path
+      if on_finish then
+        on_finish()
+      end
       -- local msg = string.format("Job %d exited with code %d.", job_id, exit_code)
       -- vim.api.nvim_out_write(msg .. "\n")
     end,

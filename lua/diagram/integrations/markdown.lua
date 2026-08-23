@@ -1,5 +1,4 @@
 local renderers = require("diagram/renderers")
-local ts_query = require("vim.treesitter.query")
 
 ---@type vim.treesitter.Query
 local query = nil
@@ -18,7 +17,10 @@ local M = {
 
 M.query_buffer_diagrams = function(bufnr)
   if not query then
-    query = ts_query.parse("markdown", "(fenced_code_block (info_string) @info (code_fence_content) @code)")
+    query = vim.treesitter.query.parse(
+      "markdown",
+      "(fenced_code_block (info_string) @info (code_fence_content) @code)"
+    )
   end
 
   local buf = bufnr or vim.api.nvim_get_current_buf()

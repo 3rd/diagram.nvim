@@ -70,15 +70,12 @@ local render_buffer = function(bufnr, winnr, integration)
     end
 
     local renderer_options = state.renderer_options[renderer.id] or {}
-    local renderer_result = renderer.render(diagram.source, renderer_options)
-    
-    -- Skip rendering if the renderer returned nil (e.g., executable not found)
-    if not renderer_result then
-      goto continue
-    end
+    local renderer_result
+    local timer
+    local completed = false
 
     local function render_image()
-      if vim.fn.filereadable(renderer_result.file_path) == 0 then return end
+      if not renderer_result or vim.fn.filereadable(renderer_result.file_path) == 0 then return end
 
       local diagram_col = diagram.range.start_col
       local diagram_row = diagram.range.start_row
@@ -99,28 +96,43 @@ local render_buffer = function(bufnr, winnr, integration)
       image:render()
     end
 
-    if renderer_result.job_id then
-      -- Use a timer to poll the job's completion status every 100ms.
-      local timer = vim.loop.new_timer()
-      if not timer then return end
-      timer:start(
-        0,
-        100,
-        vim.schedule_wrap(function()
-          local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
-          if result[1] ~= -1 then
-            if timer:is_active() then timer:stop() end
-            if not timer:is_closing() then
-              timer:close()
-              render_image()
-            end
-          end
-        end)
-      )
-    else
-      render_image()
+    local function finish()
+      if completed then return end
+      completed = true
+
+      if timer then
+        if timer:is_active() then timer:stop() end
+        if not timer:is_closing() then timer:close() end
+      end
+
+      vim.schedule(render_image)
     end
-    
+
+    renderer_result = renderer.render(diagram.source, renderer_options, finish)
+
+    -- Skip rendering if the renderer returned nil (e.g., executable not found)
+    if not renderer_result then
+      goto continue
+    end
+
+    if not renderer_result.job_id then
+      finish()
+      goto continue
+    end
+
+    -- Compatibility fallback for asynchronous renderers that only return job_id.
+    timer = vim.loop.new_timer()
+    if not timer then return end
+    timer:start(
+      0,
+      100,
+      vim.schedule_wrap(function()
+        if completed then return end
+        local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
+        if result[1] ~= -1 then finish() end
+      end)
+    )
+
     ::continue::
   end
 end
@@ -128,7 +140,7 @@ end
 ---@param opts PluginOptions
 local setup = function(opts)
   local ok = pcall(require, "image")
-  if not ok then 
+  if not ok then
     vim.notify("Missing dependency: 3rd/image.nvim\nPlease install image.nvim to use diagram.nvim", vim.log.levels.ERROR, { title = "Diagram.nvim" })
     return
   end

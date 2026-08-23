@@ -53,7 +53,6 @@ end
 local get_diagram_at_cursor = function(bufnr, integrations)
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row = cursor[1] - 1 -- 0-indexed
-  local col = cursor[2]
 
   -- Find matching integration for current filetype
   local ft = vim.bo[bufnr].filetype
@@ -111,11 +110,16 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
 
   -- Render the diagram
   local options = renderer_options[renderer.id] or {}
-  local renderer_result = renderer.render(diagram.source, options)
+  local renderer_result
+  local timer
+  local completed = false
 
   local function show_in_tab()
-    if vim.fn.filereadable(renderer_result.file_path) == 0 then
-      vim.notify("Diagram file not found: " .. renderer_result.file_path, vim.log.levels.ERROR)
+    if not renderer_result or vim.fn.filereadable(renderer_result.file_path) == 0 then
+      vim.notify(
+        "Diagram file not found: " .. (renderer_result and renderer_result.file_path or "nil"),
+        vim.log.levels.ERROR
+      )
       return
     end
 
@@ -162,42 +166,58 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
     end
 
     -- Keymaps for the diagram tab
-    vim.keymap.set("n", "q", function()
+    local function close()
       if image then image:clear() end
       vim.cmd("tabclose")
-    end, { buffer = buf, desc = "Close diagram tab" })
+    end
 
-    vim.keymap.set("n", "<Esc>", function()
-      if image then image:clear() end
-      vim.cmd("tabclose")
-    end, { buffer = buf, desc = "Close diagram tab" })
-
+    vim.keymap.set("n", "q", close, { buffer = buf, desc = "Close diagram tab" })
+    vim.keymap.set("n", "<Esc>", close, { buffer = buf, desc = "Close diagram tab" })
     vim.keymap.set("n", "o", function()
       vim.ui.open(renderer_result.file_path)
     end, { buffer = buf, desc = "Open image with system viewer" })
+
+    vim.api.nvim_create_autocmd("BufWipeout", {
+      buffer = buf,
+      once = true,
+      callback = function()
+        if image then image:clear() end
+      end,
+    })
   end
 
-  if renderer_result.job_id then
-    -- Wait for async rendering
-    local timer = vim.loop.new_timer()
-    if not timer then return end
-    timer:start(
-      0,
-      100,
-      vim.schedule_wrap(function()
-        local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
-        if result[1] ~= -1 then
-          if timer:is_active() then timer:stop() end
-          if not timer:is_closing() then
-            timer:close()
-            show_in_tab()
-          end
-        end
-      end)
-    )
-  else
-    show_in_tab()
+  local function finish()
+    if completed then return end
+    completed = true
+
+    if timer then
+      if timer:is_active() then timer:stop() end
+      if not timer:is_closing() then timer:close() end
+    end
+
+    vim.schedule(show_in_tab)
   end
+
+  renderer_result = renderer.render(diagram.source, options, finish)
+  if not renderer_result then return end
+
+  if not renderer_result.job_id then
+    finish()
+    return
+  end
+
+  -- Compatibility fallback for asynchronous renderers that only return job_id.
+  timer = vim.loop.new_timer()
+  if not timer then return end
+  timer:start(
+    0,
+    100,
+    vim.schedule_wrap(function()
+      if completed then return end
+      local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
+      if result[1] ~= -1 then finish() end
+    end)
+  )
 end
 
 ---@param integrations Integration[]

@@ -1,5 +1,4 @@
 local renderers = require("diagram/renderers")
-local ts_query = require("vim.treesitter.query")
 
 ---@type vim.treesitter.Query
 local query = nil
@@ -18,7 +17,7 @@ local M = {
 
 M.query_buffer_diagrams = function(bufnr)
   if not query then
-    query = ts_query.parse(
+    query = vim.treesitter.query.parse(
       "norg",
       [[
       (ranged_verbatim_tag
@@ -48,6 +47,7 @@ M.query_buffer_diagrams = function(bufnr)
     local value = vim.treesitter.get_node_text(node, buf)
 
     if key == "tag_name" then
+      current_language = nil
       local start_row, start_col, _, _ = node:range()
       current_range = {
         start_row = start_row,
