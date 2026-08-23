@@ -11,7 +11,7 @@
 
 ---@class Renderer<D2Options>
 local M = {
-	id = "d2",
+  id = "d2",
 }
 
 -- fs cache
@@ -23,86 +23,86 @@ vim.fn.mkdir(cache_dir, "p")
 ---@param on_finish? function
 ---@return table|nil
 M.render = function(source, options, on_finish)
-	local format = options.format or "png"
-	local normalized_options = vim.tbl_extend("force", {}, options, { format = format })
-	local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. vim.inspect(normalized_options))
-	local path = vim.fn.resolve(cache_dir .. "/" .. hash .. "." .. format)
-	if vim.fn.filereadable(path) == 1 then
-		return { file_path = path }
-	end
+  local format = options.format or "png"
+  local normalized_options = vim.tbl_extend("force", {}, options, { format = format })
+  local hash = vim.fn.sha256(M.id .. ":" .. source .. ":" .. vim.inspect(normalized_options))
+  local path = vim.fn.resolve(cache_dir .. "/" .. hash .. "." .. format)
+  if vim.fn.filereadable(path) == 1 then
+    return { file_path = path }
+  end
 
-	if not vim.fn.executable("d2") then
-		vim.notify(
-			"d2 not found in PATH. Please install D2 to use D2 diagrams.",
-			vim.log.levels.ERROR,
-			{ title = "Diagram.nvim" }
-		)
-		return nil
-	end
+  if not vim.fn.executable("d2") then
+    vim.notify(
+      "d2 not found in PATH. Please install D2 to use D2 diagrams.",
+      vim.log.levels.ERROR,
+      { title = "Diagram.nvim" }
+    )
+    return nil
+  end
 
-	local tmpsource = vim.fn.tempname()
-	vim.fn.writefile(vim.split(source, "\n"), tmpsource)
+  local tmpsource = vim.fn.tempname()
+  vim.fn.writefile(vim.split(source, "\n"), tmpsource)
 
-	local command_parts = {
-		"d2",
-	}
+  local command_parts = {
+    "d2",
+  }
 
-	-- Add custom CLI arguments if provided
-	if options.cli_args and #options.cli_args > 0 then
-		vim.list_extend(command_parts, options.cli_args)
-	end
+  -- Add custom CLI arguments if provided
+  if options.cli_args and #options.cli_args > 0 then
+    vim.list_extend(command_parts, options.cli_args)
+  end
 
-	-- Add input and output files
-	table.insert(command_parts, tmpsource)
-	table.insert(command_parts, path)
+  -- Add input and output files
+  table.insert(command_parts, tmpsource)
+  table.insert(command_parts, path)
 
-	-- Add standard options
-	if options.theme_id then
-		table.insert(command_parts, "-t")
-		table.insert(command_parts, options.theme_id)
-	end
-	if options.dark_theme_id then
-		table.insert(command_parts, "--dark-theme")
-		table.insert(command_parts, options.dark_theme_id)
-	end
-	if options.scale then
-		table.insert(command_parts, "--scale")
-		table.insert(command_parts, options.scale)
-	end
-	if options.layout then
-		table.insert(command_parts, "--layout")
-		table.insert(command_parts, options.layout)
-	end
-	if options.sketch then
-		table.insert(command_parts, "-s")
-	end
+  -- Add standard options
+  if options.theme_id then
+    table.insert(command_parts, "-t")
+    table.insert(command_parts, options.theme_id)
+  end
+  if options.dark_theme_id then
+    table.insert(command_parts, "--dark-theme")
+    table.insert(command_parts, options.dark_theme_id)
+  end
+  if options.scale then
+    table.insert(command_parts, "--scale")
+    table.insert(command_parts, options.scale)
+  end
+  if options.layout then
+    table.insert(command_parts, "--layout")
+    table.insert(command_parts, options.layout)
+  end
+  if options.sketch then
+    table.insert(command_parts, "-s")
+  end
 
-	local command = command_parts
+  local command = command_parts
 
-	local job_id = vim.fn.jobstart(command, {
-		on_stdout = function(job_id, data, event) end,
-		on_stderr = function(job_id, data, event)
-			local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
-			if vim.startswith(error_msg, "success: successfully compiled") then
-				return
-			end
-			if error_msg ~= "" then
-				vim.notify(
-					"Failed to render D2 diagram:\n" .. error_msg,
-					vim.log.levels.ERROR,
-					{ title = "Diagram.nvim" }
-				)
-			end
-		end,
-		on_exit = function(job_id, exit_code, event)
-			vim.fn.delete(tmpsource)
-			if on_finish then
-				on_finish()
-			end
-		end,
-	})
+  local job_id = vim.fn.jobstart(command, {
+    on_stdout = function(job_id, data, event) end,
+    on_stderr = function(job_id, data, event)
+      local error_msg = table.concat(data, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+      if vim.startswith(error_msg, "success: successfully compiled") then
+        return
+      end
+      if error_msg ~= "" then
+        vim.notify(
+          "Failed to render D2 diagram:\n" .. error_msg,
+          vim.log.levels.ERROR,
+          { title = "Diagram.nvim" }
+        )
+      end
+    end,
+    on_exit = function(job_id, exit_code, event)
+      vim.fn.delete(tmpsource)
+      if on_finish then
+        on_finish()
+      end
+    end,
+  })
 
-	return { file_path = path, job_id = job_id }
+  return { file_path = path, job_id = job_id }
 end
 
 return M
