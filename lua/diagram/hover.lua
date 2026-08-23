@@ -108,6 +108,7 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
     return
   end
 
+  -- Render the diagram
   local options = renderer_options[renderer.id] or {}
   local renderer_result
   local timer
@@ -122,17 +123,21 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
       return
     end
 
+    -- Show ready notification to replace loading message
     show_ready_notification()
 
+    -- Create a new tab for better image.nvim support
     vim.cmd("tabnew")
     local buf = vim.api.nvim_get_current_buf()
     local win = vim.api.nvim_get_current_win()
 
+    -- Set buffer options
     vim.api.nvim_buf_set_name(buf, diagram.renderer_id .. " diagram")
     vim.bo[buf].buftype = "nofile"
     vim.bo[buf].bufhidden = "wipe"
     vim.bo[buf].swapfile = false
 
+    -- Add header content
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
       "# " .. diagram.renderer_id:upper() .. " Diagram",
       "",
@@ -141,6 +146,7 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
       "",
     })
 
+    -- Try to render the image
     local image = image_nvim.from_file(renderer_result.file_path, {
       buffer = buf,
       window = win,
@@ -153,11 +159,13 @@ M.show_diagram_hover = function(diagram, integrations, renderer_options)
     if image then
       image:render()
     else
+      -- Fallback if image.nvim fails
       vim.api.nvim_buf_set_lines(buf, -1, -1, false, {
         "Image display failed. File: " .. renderer_result.file_path,
       })
     end
 
+    -- Keymaps for the diagram tab
     local function close()
       if image then image:clear() end
       vim.cmd("tabclose")
