@@ -14,6 +14,10 @@ Renderers take source code as input and render it to an image, often by calling 
 \
 Integrations read buffers, extract diagram code, and dispatch work to the renderers.
 
+Automatic renders are coalesced per buffer and window. When the source changes
+while a renderer is still running, diagram.nvim cancels the superseded job and
+ignores any stale completion so an older image cannot cover the current buffer.
+
 | Integration | Supported renderers                          |
 | ----------- | ------------------------------------------- |
 | `markdown`  | `mermaid`, `plantuml`, `d2`, `gnuplot`      |

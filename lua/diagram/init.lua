@@ -1,6 +1,7 @@
 local hover = require("diagram/hover")
 local image_nvim = require("image")
 local integrations = require("diagram/integrations")
+local RenderController = require("diagram/render")
 
 ---@class State
 local state = {
@@ -40,89 +41,15 @@ local state = {
     integrations.markdown,
     integrations.neorg,
   },
-  diagrams = {},
 }
 
-local clear_buffer = function(bufnr)
-  for _, diagram in ipairs(state.diagrams) do
-    if diagram.bufnr == bufnr and diagram.image ~= nil then diagram.image:clear() end
-  end
-end
+local controller = RenderController.new(image_nvim)
 
 ---@param bufnr number
 ---@param winnr number
 ---@param integration Integration
 local render_buffer = function(bufnr, winnr, integration)
-  local diagrams = integration.query_buffer_diagrams(bufnr)
-  clear_buffer(bufnr)
-  for _, diagram in ipairs(diagrams) do
-    ---@type Renderer
-    local renderer = nil
-    for _, r in ipairs(integration.renderers) do
-      if r.id == diagram.renderer_id then
-        renderer = r
-        break
-      end
-    end
-    if not renderer then
-      vim.notify("Unknown diagram renderer: " .. diagram.renderer_id, vim.log.levels.ERROR, { title = "Diagram.nvim" })
-      goto continue
-    end
-
-    local renderer_options = state.renderer_options[renderer.id] or {}
-    local renderer_result = renderer.render(diagram.source, renderer_options)
-    
-    -- Skip rendering if the renderer returned nil (e.g., executable not found)
-    if not renderer_result then
-      goto continue
-    end
-
-    local function render_image()
-      if vim.fn.filereadable(renderer_result.file_path) == 0 then return end
-
-      local diagram_col = diagram.range.start_col
-      local diagram_row = diagram.range.start_row
-      if vim.bo[bufnr].filetype == "norg" then diagram_row = diagram_row - 1 end
-
-      local image = image_nvim.from_file(renderer_result.file_path, {
-        buffer = bufnr,
-        window = winnr,
-        with_virtual_padding = true,
-        inline = true,
-        x = diagram_col,
-        y = diagram_row,
-        render_offset_top = 1,
-      })
-      diagram.image = image
-
-      table.insert(state.diagrams, diagram)
-      image:render()
-    end
-
-    if renderer_result.job_id then
-      -- Use a timer to poll the job's completion status every 100ms.
-      local timer = vim.loop.new_timer()
-      if not timer then return end
-      timer:start(
-        0,
-        100,
-        vim.schedule_wrap(function()
-          local result = vim.fn.jobwait({ renderer_result.job_id }, 0)
-          if result[1] ~= -1 then
-            if timer:is_active() then timer:stop() end
-            if not timer:is_closing() then
-              timer:close()
-              render_image()
-            end
-          end
-        end)
-      )
-    else
-      render_image()
-    end
-    
-    ::continue::
-  end
+  controller:queue(bufnr, winnr, integration, state.renderer_options)
 end
 
 ---@param opts PluginOptions
@@ -162,7 +89,7 @@ local setup = function(opts)
       vim.api.nvim_create_autocmd(state.events.clear_buffer, {
         buffer = bufnr,
         callback = function()
-          clear_buffer(bufnr)
+          controller:clear_buffer(bufnr)
         end,
       })
     end
@@ -213,7 +140,7 @@ local render = function()
 end
 
 local clear = function()
-  clear_buffer(vim.api.nvim_get_current_buf())
+  controller:clear_buffer(vim.api.nvim_get_current_buf())
 end
 
 return {

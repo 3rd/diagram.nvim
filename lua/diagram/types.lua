@@ -1,6 +1,5 @@
 ---@class State
 ---@field integrations Integration[]
----@field diagrams Diagram[]
 
 ---@class PluginOptions
 ---@field integrations Integration[]
@@ -8,8 +7,11 @@
 
 ---@class Renderer<RenderOptions>
 ---@field id string
---- renders to a temp file and returns the path
----@field render fun(source: string, options?: RenderOptions): string
+---@field render fun(source: string, options?: RenderOptions): RendererResult|nil
+
+---@class RendererResult
+---@field file_path string
+---@field job_id? number
 
 ---@class IntegrationOptions
 ---@field filetypes string[]
