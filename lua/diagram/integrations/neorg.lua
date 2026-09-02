@@ -49,6 +49,9 @@ M.query_buffer_diagrams = function(bufnr)
 
     if key == "tag_name" then
       local start_row, start_col, _, _ = node:range()
+      -- Reset language: ranged_verbatim_tag may have no tag_parameters
+      -- (e.g. @math), so a stale language from a previous tag must not leak.
+      current_language = nil
       current_range = {
         start_row = start_row,
         start_col = start_col,
